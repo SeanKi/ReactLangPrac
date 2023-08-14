@@ -1,10 +1,13 @@
 {
+	"homepage":"https://seanki.github.io/ReactLangPrac/"
   "name": "ReactLangPrac",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
+	"predeploy":"npm run build"
+	"deploy":"gh-pages -d build"
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test.e2e": "cypress run",
