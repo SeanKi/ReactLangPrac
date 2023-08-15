@@ -3,8 +3,27 @@ import { IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, I
 import ExploreContainer from '../components/ExploreContainer';
 import './Tab1.css';
 
+type ContentType = {
+  No: string | null;
+  Type: string | null;
+  Group: string | null;
+  FIELD1: string | null;
+  FIELD2: string | null;
+  DESC: string | null;
+};
+
+type GroupInfo = {
+  Index: number;
+  Group: string | null;
+  Count: number;
+};
+
+type DictGroup = {
+  [key: string]: string;
+};
+
 const Tab1: React.FC = () => {
-  const dictGroup = {
+  const dictGroup: DictGroup = {
     "1": "1 문장의5형식",
     "2": "2 명사,대명사,관사 등",
     "3": "3 형용사,부사",
@@ -16,12 +35,14 @@ const Tab1: React.FC = () => {
     "9": "9 50잉글리시 50~99",
     "10": "10 짧은표현 200"
   };
-  const [groupInfoList, setGroupInfoList] = useState([
+  const [groupInfoList, setGroupInfoList] = useState<GroupInfo[]>([
         // ... Add more group info as needed
   ]);
   const [selectedGroup, setSelectedGroup] = useState("1"); // Default selected group
 
-  const [contents, setContents] = useState([]);
+  const [contents, setContents] = useState<ContentType[]>([]);
+
+
 
   const fetchData = async () => {
     const xmlFilePath = '/400Sentences.xml'; // XML 파일 경로를 수정하세요
@@ -35,13 +56,16 @@ const Tab1: React.FC = () => {
       
       const contentNodes = xmlDoc.querySelectorAll('CONTENT');
       const contentArray = Array.from(contentNodes).map((contentNode) => {
+        const field1 = contentNode.querySelector('FIELD1');
+        const field2 = contentNode.querySelector('FIELD2');
+        const desc = contentNode.querySelector('DESC');
         return {
           No: contentNode.getAttribute('No'),
           Type: contentNode.getAttribute('Type'),
           Group: contentNode.getAttribute('Group'),
-          FIELD1: contentNode.querySelector('FIELD1').textContent,
-          FIELD2: contentNode.querySelector('FIELD2').textContent,
-          DESC: contentNode.querySelector('DESC').textContent,
+          FIELD1: field1?field1.textContent: null,
+          FIELD2: field2?field2.textContent: null,
+          DESC: desc?desc.textContent: null,
         };
       });
       if (groupInfoList.length == 0) {
@@ -94,7 +118,7 @@ const Tab1: React.FC = () => {
           <IonSelect value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
             {groupInfoList.map(group => (
               <IonSelectOption key={group.Group} value={group.Group}>
-                {dictGroup[group.Group]}
+                {group.Group !== null ? dictGroup[group.Group] : "No Group"}
               </IonSelectOption>
             ))}
           </IonSelect>
