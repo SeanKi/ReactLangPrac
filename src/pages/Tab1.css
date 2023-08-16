@@ -1,0 +1,9 @@
+.playButton {
+    padding: 3px 1px 3px 1px;
+    border-radius: 20%;
+}
+
+.avatarStyle {
+    display: flex;
+    align-items: flex-start;
+}

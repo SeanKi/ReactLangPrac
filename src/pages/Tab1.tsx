@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar } from '@ionic/react';
+import { IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent} from '@ionic/react';
+import { musicalNotes, caretForwardCircleOutline } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import ExploreContainer from '../components/ExploreContainer';
 import './Tab1.css';
 
@@ -10,6 +11,8 @@ type ContentType = {
   FIELD1: string | null;
   FIELD2: string | null;
   DESC: string | null;
+  EngFile: string | null;
+  KorFile: string | null;
 };
 
 type GroupInfo = {
@@ -22,7 +25,19 @@ type DictGroup = {
   [key: string]: string;
 };
 
+let g_bPlay : boolean = false;
+
 const Tab1: React.FC = () => {
+  const buttonStyle = {
+    padding: '3px 1px 3px 1px',
+    borderRadius: '30%',
+  };
+  const buttonStyle2 = {
+    padding: '3px 1px 3px 1px',
+    borderRadius: '30%',
+    innerHeight:'30px'
+  };
+  
   const dictGroup: DictGroup = {
     "1": "1 문장의5형식",
     "2": "2 명사,대명사,관사 등",
@@ -40,9 +55,118 @@ const Tab1: React.FC = () => {
   ]);
   const [selectedGroup, setSelectedGroup] = useState("1"); // Default selected group
 
+  const [currentIndex, setCurrentInex] = useState(0);
+
   const [contents, setContents] = useState<ContentType[]>([]);
+  const [currentContent, setCurrentContent] = useState<ContentType>();
+  const [currentField, setCurrentField] = useState("");
+  const [currentDesc, setCurrentDesc] = useState("");
+
+  const [buffer, setBuffer] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  let bPlay : boolean = false;
+
+  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
+
+  const playAudio = (fileName: string | null) => {
+    if (audioPlayer) {
+      audioPlayer.pause();
+    }
+
+    const newAudioPlayer = new Audio(`/audio/${fileName}.mp3`);
+    newAudioPlayer.play();
+    setAudioPlayer(newAudioPlayer);
+    return newAudioPlayer;
+  };
+
+  let timeID:number = -1;
+
+  const playStop =() => {
+    if (audioPlayer) {
+      audioPlayer.pause();
+      console.log("playStop audioPlayer.pause()");
+    } else {
+      console.log("playStop audioPlayer is null");
+    }
+    clearTimer();
+    playOff();
+  }
+
+  const clearTimer = () => {
+    if (timeID > -1) 
+      window.clearTimeout(timeID);
+    timeID = -1;
+    console.log("clearTimer bPlay:" + bPlay);
+  }
+
+  function playOn () {
+    setIsPlaying(true);
+    g_bPlay = true;
+    console.log('playOn bPlay:' + g_bPlay);
+  }
+  function playOff () {
+    setIsPlaying(false);
+    g_bPlay = false;
+    console.log('playOff bPlay:' + g_bPlay);
+  }
+
+  const playAudioAndWait = (fileName: string | null, waitRate: number) => {
+    return new Promise<void>((resolve) => {
+      let audio = playAudio(fileName);
+      if (audio) {
+        audio.onended = function () {
+          let waitTime = 2000;
+          if (audio.duration && waitRate) {
+            waitTime = audio.duration * waitRate * 1000;
+          }
+          clearTimer();
+          timeID =  window.setTimeout(() => {
+            resolve();
+          }, waitTime);
+        };
+      }
+    });
+  };
+
+  const playAudio1Line = async (content : ContentType) => {
+    setCurrentContent(content);
+    setCurrentField("");
+    setCurrentDesc("");
+    await playAudioAndWait(content.KorFile, 0.7); 
+    if (!g_bPlay) return; //isPlaying)
+    setCurrentField(content.FIELD1 as string);
+    setCurrentDesc(content.DESC as string);
+    await playAudioAndWait(content.EngFile, 1);
+  };
 
 
+  async function playAudio1Group() {
+    const grpInfo = groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup);
+    const startIndex = grpInfo?.Index as number;
+    const count = grpInfo?.Count as number;
+    let index = startIndex;
+    playOn();
+    // let timer:number;
+    // const timerFn = async ()=> {
+    //   setProgress((index - startIndex)/count);
+    //   setBuffer((index - startIndex)/count);
+    //   await playAudio1Line (contents[index]);
+    //   index++;
+    //   timer = window.setTimeout(timerFn, 1);
+    // }
+    // timer = window.setTimeout(timerFn, 1);
+    while(index < (startIndex + count)) {
+      setProgress((index - startIndex)/count);
+      setBuffer((index - startIndex)/count);
+      await playAudio1Line (contents[index]);
+      if (!g_bPlay) //isPlaying
+        break;
+      index++;
+    };
+    playOff();
+  };
 
   const fetchData = async () => {
     const xmlFilePath = '/400Sentences.xml'; // XML 파일 경로를 수정하세요
@@ -63,8 +187,10 @@ const Tab1: React.FC = () => {
           No: contentNode.getAttribute('No'),
           Type: contentNode.getAttribute('Type'),
           Group: contentNode.getAttribute('Group'),
-          FIELD1: field1?field1.textContent: null,
-          FIELD2: field2?field2.textContent: null,
+          FIELD1: field1?field1.textContent: '',
+          FIELD2: field2?field2.textContent: '',
+          EngFile: field1?field1.getAttribute('Name'):'',
+          KorFile: field2?field2.getAttribute('Name'):'',
           DESC: desc?desc.textContent: null,
         };
       });
@@ -104,7 +230,19 @@ const Tab1: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Tab 1</IonTitle>
+          <IonTitle>Sentence</IonTitle>
+          
+          {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
+          {isPlaying?(
+          <IonCard style={{height:'200px'}}>
+          <IonCardHeader>
+            <IonCardTitle>{currentContent?.No} <IonButton size="small" onClick={()=>playStop()}>Stop</IonButton></IonCardTitle>
+            <IonCardSubtitle>{currentContent?.FIELD2}</IonCardSubtitle>
+            <IonCardSubtitle>{currentField}</IonCardSubtitle>
+          </IonCardHeader>
+          <IonCardContent>{currentDesc}</IonCardContent>
+        </IonCard>
+):""}
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -114,7 +252,12 @@ const Tab1: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonList>
-          <IonListHeader> Sentence practice</IonListHeader>
+          <IonListHeader> <h1>Sentence practice</h1></IonListHeader>
+          &nbsp;
+          {!isPlaying?(
+          <IonButton onClick={()=>playAudio1Group()}>Play Group</IonButton> 
+          ):""}
+          <br/> 
           <IonSelect value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
             {groupInfoList.map(group => (
               <IonSelectOption key={group.Group} value={group.Group}>
@@ -125,12 +268,12 @@ const Tab1: React.FC = () => {
           {contents.map((content, index) => (
             content.Group == selectedGroup && (
             <IonItem key={content.No}>
-              <IonAvatar slot="start">
-                {content.No}
+              <IonAvatar slot="start" className="avatarStyle">
+                <table><tr><td>{content.No}</td></tr><tr><td><IonButton onClick={async () => {playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
               </IonAvatar>
               <IonLabel>
-                <h2 className="ion-text-wrap">{content.FIELD1}</h2>
-                <h3 className="ion-text-wrap">{content.FIELD2}</h3>
+                <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD2}</h2>
+                <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD1}</h2>
                 <p className="ion-text-wrap">{content.DESC}</p>
               </IonLabel>
             </IonItem>
