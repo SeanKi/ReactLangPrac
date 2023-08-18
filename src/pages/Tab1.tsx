@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent} from '@ionic/react';
-import { musicalNotes, caretForwardCircleOutline } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
+import { musicalNotes, caretForwardCircleOutline, playOutline } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import ExploreContainer from '../components/ExploreContainer';
 import './Tab1.css';
 
@@ -54,8 +54,9 @@ const Tab1: React.FC = () => {
         // ... Add more group info as needed
   ]);
   const [selectedGroup, setSelectedGroup] = useState("1"); // Default selected group
+  const [progressTxt, setProgressTxt] = useState("");
 
-  const [currentIndex, setCurrentInex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const [contents, setContents] = useState<ContentType[]>([]);
   const [currentContent, setCurrentContent] = useState<ContentType>();
@@ -91,6 +92,7 @@ const Tab1: React.FC = () => {
       console.log("playStop audioPlayer is null");
     }
     clearTimer();
+    setProgressTxt(progressTxt=>"");
     playOff();
   }
 
@@ -141,12 +143,23 @@ const Tab1: React.FC = () => {
     await playAudioAndWait(content.EngFile, 1);
   };
 
+  function selectGroup(selectedGroup_ : string, bFirst : boolean) {
+    setSelectedGroup(selectedGroup_);
+    const grpInfo = groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup_);
+    const startIndex = grpInfo?.Index as number;
+    if (bFirst) 
+      setCurrentIndex(startIndex);
+    return grpInfo;
+    // const count = grpInfo?.Count as number;
+  }
 
   async function playAudio1Group() {
-    const grpInfo = groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup);
+    const grpInfo = selectGroup(selectedGroup, false); // groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup);
     const startIndex = grpInfo?.Index as number;
     const count = grpInfo?.Count as number;
-    let index = startIndex;
+    let index = currentIndex;
+    const startNo = contents[index].No;
+    setProgressTxt(progressTxt=>"Start!");
     playOn();
     // let timer:number;
     // const timerFn = async ()=> {
@@ -158,14 +171,20 @@ const Tab1: React.FC = () => {
     // }
     // timer = window.setTimeout(timerFn, 1);
     while(index < (startIndex + count)) {
+      if (startNo !== contents[index].No) {
+        setProgressTxt(progressTxt=>startNo + " ~ " + contents[index].No);
+      }
       setProgress((index - startIndex)/count);
       setBuffer((index - startIndex)/count);
       await playAudio1Line (contents[index]);
       if (!g_bPlay) //isPlaying
         break;
+      setCurrentIndex(index=>index+1);
       index++;
+      
     };
-    playOff();
+    setProgressTxt(progressTxt=>progressTxt + " Done!");
+    // playOff();
   };
 
   const fetchData = async () => {
@@ -179,7 +198,9 @@ const Tab1: React.FC = () => {
       const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
       
       const contentNodes = xmlDoc.querySelectorAll('CONTENT');
-      const contentArray = Array.from(contentNodes).map((contentNode) => {
+      const contentArray = Array.from(contentNodes)
+        .filter((contentNode) => contentNode.getAttribute('Group') !== '')
+        .map((contentNode) => {
         const field1 = contentNode.querySelector('FIELD1');
         const field2 = contentNode.querySelector('FIELD2');
         const desc = contentNode.querySelector('DESC');
@@ -201,9 +222,9 @@ const Tab1: React.FC = () => {
         let grpInfo = { Index: i, Group: curGroup, Count: 0 };
         groupInfoList.push(grpInfo);
         for (i = 0; i < contentArray.length; i++) {
-          if (contentArray[i].Group == '') continue;
-          grpInfo.Count++;
-          if (contentArray[i].Group !== curGroup) {
+          if (contentArray[i].Group === curGroup) {
+            grpInfo.Count++;
+          } else { // if (contentArray[i].Group !== curGroup) 
             grpInfo = { Index: i, Group: contentArray[i].Group, Count: 0 };
             curGroup = grpInfo.Group;
             groupInfoList.push(grpInfo);
@@ -222,7 +243,9 @@ const Tab1: React.FC = () => {
 
   const handleSelectChange = (event: CustomEvent) => {
     const selectedValue = event.detail.value;
-    setSelectedGroup(selectedValue);
+    selectGroup(selectedValue, true); //
+    //
+
     console.log("Selected Group:", selectedValue);
   };
 
@@ -230,7 +253,9 @@ const Tab1: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Sentence</IonTitle>
+          <IonTitle>Sentence  {!isPlaying?(
+          <IonButton onClick={()=>playAudio1Group()}><IonIcon icon={playOutline}></IonIcon> Play List</IonButton> 
+          ):""} {progressTxt}</IonTitle>
           
           {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
           {isPlaying?(
@@ -252,12 +277,8 @@ const Tab1: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonList>
-          <IonListHeader> <h1>Sentence practice</h1></IonListHeader>
+          <IonListHeader> <h1>Sentence practice </h1></IonListHeader>
           &nbsp;
-          {!isPlaying?(
-          <IonButton onClick={()=>playAudio1Group()}>Play Group</IonButton> 
-          ):""}
-          <br/> 
           <IonSelect value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
             {groupInfoList.map(group => (
               <IonSelectOption key={group.Group} value={group.Group}>
@@ -269,9 +290,9 @@ const Tab1: React.FC = () => {
             content.Group == selectedGroup && (
             <IonItem key={content.No}>
               <IonAvatar slot="start" className="avatarStyle">
-                <table><tr><td>{content.No}</td></tr><tr><td><IonButton onClick={async () => {playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
+                <table><tr><td>{content.No}</td></tr><tr><td><IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
               </IonAvatar>
-              <IonLabel>
+              <IonLabel className={currentIndex == index?'highlight':''}>
                 <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD2}</h2>
                 <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD1}</h2>
                 <p className="ion-text-wrap">{content.DESC}</p>

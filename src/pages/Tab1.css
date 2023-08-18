@@ -7,3 +7,7 @@
     display: flex;
     align-items: flex-start;
 }
+
+.highlight {
+    background-color: #ffff33 !important;
+  }
