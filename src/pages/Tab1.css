@@ -11,3 +11,13 @@
 .highlight {
     background-color: #ffff33 !important;
   }
+
+.ion-text-wrap {
+    font-size: large;
+}
+.sc-ion-label-md-s h2 {
+    font-size: large;
+}
+.sc-ion-label-md-s p {
+    font-size: large;
+}

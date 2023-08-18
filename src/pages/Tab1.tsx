@@ -262,10 +262,10 @@ const Tab1: React.FC = () => {
           <IonCard style={{height:'200px'}}>
           <IonCardHeader>
             <IonCardTitle>{currentContent?.No} <IonButton size="small" onClick={()=>playStop()}>Stop</IonButton></IonCardTitle>
-            <IonCardSubtitle>{currentContent?.FIELD2}</IonCardSubtitle>
-            <IonCardSubtitle>{currentField}</IonCardSubtitle>
+            <IonCardSubtitle className="ion-text-wrap">{currentContent?.FIELD2}</IonCardSubtitle>
+            <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
           </IonCardHeader>
-          <IonCardContent>{currentDesc}</IonCardContent>
+          <IonCardContent className="ion-text-wrap">{currentDesc}</IonCardContent>
         </IonCard>
 ):""}
         </IonToolbar>

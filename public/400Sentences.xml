@@ -1032,7 +1032,7 @@ a +보통명사 또는 복수 명사도 같은 역할</DESC>
       <DESC>whose books 는 소유격 관계대명사.</DESC>
     </CONTENT>
     <CONTENT No="375" Type="" Group="5">
-      <FIELD1 Name="e_375">A children whose parents are dead is called an orphan.</FIELD1>
+      <FIELD1 Name="e_375">A child whose parents are dead is called an orphan.</FIELD1>
       <FIELD2 Name="k_375">부모가 죽은 아이는 고아라 불리운다.</FIELD2>
       <DESC>whose parents 는 소유격 관계대명사.</DESC>
     </CONTENT>
@@ -1064,7 +1064,7 @@ a +보통명사 또는 복수 명사도 같은 역할</DESC>
     <CONTENT No="383" Type="" Group="5">
       <FIELD1 Name="e_383">I have a book of which the cover is yellow.</FIELD1>
       <FIELD2 Name="k_383">나는 커버가 노란색인 책을 가지고 있다.</FIELD2>
-      <DESC>whose = of which</DESC>
+      <DESC>whose + n. = of which + (the) n.</DESC>
     </CONTENT>
     <CONTENT No="386" Type="" Group="5">
       <FIELD1 Name="e_386">The car and driver that fell into the river were safe.</FIELD1>
@@ -1099,7 +1099,7 @@ a +보통명사 또는 복수 명사도 같은 역할</DESC>
     </CONTENT>
     <CONTENT No="405" Type="" Group="5">
       <FIELD1 Name="e_405">The man I was talking with was John.</FIELD1>
-      <FIELD2 Name="k_405">내가 이야기 하던 그 사람은 존이다.</FIELD2>
+      <FIELD2 Name="k_405">내가 이야기 하던 그 사람은 존이었다.</FIELD2>
       <DESC>the man 뒤에 whom 이 생략 되었다.</DESC>
     </CONTENT>
     <CONTENT No="406" Type="" Group="5">
@@ -1131,19 +1131,17 @@ a +보통명사 또는 복수 명사도 같은 역할</DESC>
     <CONTENT No="418" Type="" Group="5">
       <FIELD1 Name="e_418">While I was reading, I fell asleep.</FIELD1>
       <FIELD2 Name="k_418">나는 읽는 동안에 잠이 들었다.</FIELD2>
-      <DESC>While ~ 시간 부사절</DESC>
+      <DESC>While ~ 시간 부사절, 하는 동안</DESC>
     </CONTENT>
     <CONTENT No="419" Type="" Group="5">
       <FIELD1 Name="e_419">Please take care of my dog while I am away.</FIELD1>
       <FIELD2 Name="k_419">내가 떠나 있는 동안에 나의 개를 보살 펴 주세요.</FIELD2>
-      <DESC>
-      </DESC>
+      <DESC>While ~ 시간 부사절, 주절의 앞이나, 뒤에 올 수있다</DESC>
     </CONTENT>
     <CONTENT No="420" Type="" Group="5">
       <FIELD1 Name="e_420">Please wait here until I come back.</FIELD1>
       <FIELD2 Name="k_420">내가 되돌아 올 때 까지 여기서 기다려 주세요.</FIELD2>
-      <DESC>
-      </DESC>
+      <DESC>Until ~, ~까지</DESC>
     </CONTENT>
     <CONTENT No="422" Type="" Group="5">
       <FIELD1 Name="e_422">As it was getting dark, we came home.</FIELD1>
@@ -1196,12 +1194,12 @@ a +보통명사 또는 복수 명사도 같은 역할</DESC>
     </CONTENT>
     <CONTENT No="459" Type="" Group="5">
       <FIELD1 Name="e_459">It was foolish of her to believe that.</FIELD1>
-      <FIELD2 Name="k_459">그녀가 그것을 믿은 것은 바보 스러운 것이다.</FIELD2>
+      <FIELD2 Name="k_459">그녀가 그것을 믿은 것은 바보 스러운 것이었다.</FIELD2>
       <DESC>of 의미상 주어.</DESC>
     </CONTENT>
     <CONTENT No="463" Type="" Group="5">
       <FIELD1 Name="e_463">She is rich enough to buy a car of her own.</FIELD1>
-      <FIELD2 Name="k_463">그녀는 그녀 자신의 차를 살 정도로 충분히 부유했다.</FIELD2>
+      <FIELD2 Name="k_463">그녀는 그녀 자신의 차를 살 정도로 충분히 부유하다.</FIELD2>
       <DESC>~를 하기에 충분 히 (to)~하다</DESC>
     </CONTENT>
     <CONTENT No="464" Type="" Group="5">
@@ -1501,7 +1499,7 @@ a +보통명사 또는 복수 명사도 같은 역할</DESC>
     </CONTENT>
     <CONTENT No="583" Type="" Group="6">
       <FIELD1 Name="e_583">You may sit wherever you like.</FIELD1>
-      <FIELD2 Name="k_583">너는 네가 좋아 하는 어느든지에 앉아도 된다.</FIELD2>
+      <FIELD2 Name="k_583">너는 네가 좋아 하는 어디 든지 앉아도 된다.</FIELD2>
       <DESC>wherever = any place where 이며 부사절이다. 해석은 ~ 한 곳은 어디든지 로 한다.</DESC>
     </CONTENT>
     <CONTENT No="584" Type="" Group="6">
