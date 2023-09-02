@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent} from '@ionic/react';
-import { musicalNotes, caretForwardCircleOutline, playOutline } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
+import {IonChip, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent} from '@ionic/react';
+import { musicalNotes, caretForwardCircleOutline, playOutline, listOutline } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import ExploreContainer from '../components/ExploreContainer';
 import './Tab1.css';
 
@@ -62,6 +62,7 @@ const Tab1: React.FC = () => {
   const [currentContent, setCurrentContent] = useState<ContentType>();
   const [currentField, setCurrentField] = useState("");
   const [currentDesc, setCurrentDesc] = useState("");
+  const [stopButtonName, setStopButtonName] = useState("STOP");
 
   const [buffer, setBuffer] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -161,6 +162,7 @@ const Tab1: React.FC = () => {
     const startNo = contents[index].No;
     setProgressTxt(progressTxt=>"Start!");
     playOn();
+    setStopButtonName("Stop");
     // let timer:number;
     // const timerFn = async ()=> {
     //   setProgress((index - startIndex)/count);
@@ -184,6 +186,7 @@ const Tab1: React.FC = () => {
       
     };
     setProgressTxt(progressTxt=>progressTxt + " Done!");
+    setStopButtonName("Close");
     // playOff();
   };
 
@@ -222,10 +225,10 @@ const Tab1: React.FC = () => {
         let grpInfo = { Index: i, Group: curGroup, Count: 0 };
         groupInfoList.push(grpInfo);
         for (i = 0; i < contentArray.length; i++) {
-          if (contentArray[i].Group === curGroup) {
+          if (contentArray[i].Group == curGroup) {
             grpInfo.Count++;
           } else { // if (contentArray[i].Group !== curGroup) 
-            grpInfo = { Index: i, Group: contentArray[i].Group, Count: 0 };
+            grpInfo = { Index: i, Group: contentArray[i].Group, Count: 1 }; // start from 1. not 0 for Count;
             curGroup = grpInfo.Group;
             groupInfoList.push(grpInfo);
           }
@@ -254,14 +257,22 @@ const Tab1: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Sentence  {!isPlaying?(
-          <IonButton onClick={()=>playAudio1Group()}><IonIcon icon={playOutline}></IonIcon> Play List</IonButton> 
+          <IonButton onClick={()=>playAudio1Group()}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
           ):""} {progressTxt}</IonTitle>
-          
+          <table>
+            <tr>
+            <td><IonChip outline={true} style={{ fontSize: '1.3em', marginLeft:'0.5em'}}>Grp</IonChip></td><td><IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
+            {groupInfoList.map(group => (
+              <IonSelectOption key={group.Group} value={group.Group}>
+                {group.Group !== null ? dictGroup[group.Group] : "No Group"}
+              </IonSelectOption>
+            ))}
+          </IonSelect></td></tr></table>
           {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
           {isPlaying?(
-          <IonCard style={{height:'200px'}}>
+          <IonCard style={{ minHeight:'16em'}}>
           <IonCardHeader>
-            <IonCardTitle>{currentContent?.No} <IonButton size="small" onClick={()=>playStop()}>Stop</IonButton></IonCardTitle>
+            <IonCardTitle>{currentContent?.No} <IonButton size="small" onClick={()=>playStop()}>{stopButtonName}</IonButton></IonCardTitle>
             <IonCardSubtitle className="ion-text-wrap">{currentContent?.FIELD2}</IonCardSubtitle>
             <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
           </IonCardHeader>
@@ -278,14 +289,7 @@ const Tab1: React.FC = () => {
         </IonHeader>
         <IonList>
           <IonListHeader> <h1>Sentence practice </h1></IonListHeader>
-          &nbsp;
-          <IonSelect value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
-            {groupInfoList.map(group => (
-              <IonSelectOption key={group.Group} value={group.Group}>
-                {group.Group !== null ? dictGroup[group.Group] : "No Group"}
-              </IonSelectOption>
-            ))}
-          </IonSelect>
+          <p style={{marginLeft:'0.5em'}}>{dictGroup[selectedGroup]}</p>
           {contents.map((content, index) => (
             content.Group == selectedGroup && (
             <IonItem key={content.No}>
@@ -293,7 +297,7 @@ const Tab1: React.FC = () => {
                 <table><tr><td>{content.No}</td></tr><tr><td><IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
               </IonAvatar>
               <IonLabel className={currentIndex == index?'highlight':''}>
-                <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD2}</h2>
+                <h2 className="ion-text-wrap" style={{fontStyle:'Nanum Myeongjo'}}><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD2}</h2>
                 <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD1}</h2>
                 <p className="ion-text-wrap">{content.DESC}</p>
               </IonLabel>
