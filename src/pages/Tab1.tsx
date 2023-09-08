@@ -256,12 +256,12 @@ const Tab1: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Sentence  {!isPlaying?(
-          <IonButton onClick={()=>playAudio1Group()}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
-          ):""} {progressTxt}</IonTitle>
+          <IonTitle>Sentence   {progressTxt}</IonTitle>
           <table>
             <tr>
-            <td><IonChip outline={true} style={{ fontSize: '1.3em', marginLeft:'0.5em'}}>Grp</IonChip></td><td><IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
+            <td>{!isPlaying?(
+          <IonButton onClick={()=>playAudio1Group()}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
+          ):<IonButton onClick={()=>playStop()}>{stopButtonName}</IonButton>}</td><td><IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
             {groupInfoList.map(group => (
               <IonSelectOption key={group.Group} value={group.Group}>
                 {group.Group !== null ? dictGroup[group.Group] : "No Group"}
@@ -272,7 +272,7 @@ const Tab1: React.FC = () => {
           {isPlaying?(
           <IonCard style={{ minHeight:'16em'}}>
           <IonCardHeader>
-            <IonCardTitle>{currentContent?.No} <IonButton size="small" onClick={()=>playStop()}>{stopButtonName}</IonButton></IonCardTitle>
+            <IonCardTitle>{currentContent?.No} </IonCardTitle>
             <IonCardSubtitle className="ion-text-wrap">{currentContent?.FIELD2}</IonCardSubtitle>
             <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
           </IonCardHeader>
