@@ -3,6 +3,10 @@ import {IonChip, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, Ion
 import { musicalNotes, caretForwardCircleOutline, playOutline, listOutline } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import ExploreContainer from '../components/ExploreContainer';
 import './Tab1.css';
+import ReactGA from 'react-ga';
+
+ReactGA.initialize('UA-000000-01');
+ReactGA.pageview(window.location.pathname + window.location.search);
 
 type ContentType = {
   No: string | null;
@@ -172,8 +176,15 @@ const Tab1: React.FC = () => {
     //   timer = window.setTimeout(timerFn, 1);
     // }
     // timer = window.setTimeout(timerFn, 1);
+    ReactGA.event({
+      category: 'PlayAndStop',
+      action: 'start',
+      label: `Start ${grpInfo?.Index} ${grpInfo?.Group} ${startNo}`,
+    });
+    let endNo = startNo;
     while(index < (startIndex + count)) {
       if (startNo !== contents[index].No) {
+        endNo = contents[index].No;
         setProgressTxt(progressTxt=>startNo + " ~ " + contents[index].No);
       }
       setProgress((index - startIndex)/count);
@@ -187,6 +198,12 @@ const Tab1: React.FC = () => {
     };
     setProgressTxt(progressTxt=>progressTxt + " Done!");
     setStopButtonName("Close");
+
+    ReactGA.event({
+      category: 'PlayAndStop',
+      action: 'stop',
+      label: `End ${grpInfo?.Index} ${grpInfo?.Group} ${endNo}`,
+    });
     // playOff();
   };
 
