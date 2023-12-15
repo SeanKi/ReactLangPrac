@@ -21,3 +21,7 @@
 .sc-ion-label-md-s p {
     font-size: large;
 }
+.custom-popover {
+    width: 300px; /* 원하는 넓이로 조절 */
+  }
+  

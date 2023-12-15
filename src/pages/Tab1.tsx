@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {IonChip, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent} from '@ionic/react';
-import { musicalNotes, caretForwardCircleOutline, playOutline, listOutline } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
+import {IonGrid, IonRow, IonCol, IonButtons, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
+import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import ExploreContainer from '../components/ExploreContainer';
 import './Tab1.css';
 import ReactGA from 'react-ga';
@@ -65,12 +65,20 @@ const Tab1: React.FC = () => {
   const [contents, setContents] = useState<ContentType[]>([]);
   const [currentContent, setCurrentContent] = useState<ContentType>();
   const [currentField, setCurrentField] = useState("");
+  const [currentField0, setCurrentField0] = useState("");
   const [currentDesc, setCurrentDesc] = useState("");
   const [stopButtonName, setStopButtonName] = useState("STOP");
 
   const [buffer, setBuffer] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
+  const [isDescChecked, setIsDescChecked] = useState(true);
+  const [selectedDirect, setSelectedDirect] = useState("k2e"); //e2k
+
+  const [showLanguagePopover, setShowLanguagePopover] = useState(false);
+  const [showDescriptionPopover, setShowDescriptionPopover] = useState(false);
+
 
   let bPlay : boolean = false;
 
@@ -119,6 +127,32 @@ const Tab1: React.FC = () => {
     console.log('playOff bPlay:' + g_bPlay);
   }
 
+  function sortByNo(a: ContentType, b: ContentType): number {
+    const aNo = a.No || "";
+    const bNo = b.No || "";
+    // 문자열 비교
+    return aNo.localeCompare(bNo);
+  }
+  function shuffleArray() {
+    const newArray = [...contents];
+     newArray.sort((a,b) => {
+      if (a.Group != b.Group || a.Group != selectedGroup) return 0;
+      return Math.random() - 0.5;}
+      );
+     setContents(newArray);
+  }
+
+  function makeOrderList(dir_:string) {
+    if (g_bPlay) return;
+    if (dir_ == 'random') {
+      shuffleArray();
+    } else {
+      const newArray = [...contents];
+      newArray.sort(sortByNo)
+      setContents(newArray)
+    }
+  }
+
   const playAudioAndWait = (fileName: string | null, waitRate: number) => {
     return new Promise<void>((resolve) => {
       let audio = playAudio(fileName);
@@ -139,13 +173,23 @@ const Tab1: React.FC = () => {
 
   const playAudio1Line = async (content : ContentType) => {
     setCurrentContent(content);
-    setCurrentField("");
+    setCurrentField(""); // secondLine
     setCurrentDesc("");
-    await playAudioAndWait(content.KorFile, 0.7); 
-    if (!g_bPlay) return; //isPlaying)
-    setCurrentField(content.FIELD1 as string);
-    setCurrentDesc(content.DESC as string);
-    await playAudioAndWait(content.EngFile, 1);
+    if (selectedDirect == 'k2e') {
+      setCurrentField0(content.FIELD2==null?'':content.FIELD2);
+      await playAudioAndWait(content.KorFile, 0.7);
+      if (!g_bPlay) return; //isPlaying)
+      setCurrentField(content.FIELD1 as string);
+      setCurrentDesc(content.DESC as string);
+      await playAudioAndWait(content.EngFile, 1);
+    } else {
+      setCurrentField0(content.FIELD1==null?'':content.FIELD1);
+      await playAudioAndWait(content.EngFile, 0.7);
+      if (!g_bPlay) return; //isPlaying)
+      setCurrentField(content.FIELD2 as string);
+      setCurrentDesc(content.DESC as string);
+      await playAudioAndWait(content.KorFile, 1);
+    }
   };
 
   function selectGroup(selectedGroup_ : string, bFirst : boolean) {
@@ -269,14 +313,29 @@ const Tab1: React.FC = () => {
     console.log("Selected Group:", selectedValue);
   };
 
+  const handleLanguageChange= (event: CustomEvent) => {
+    const val = event.detail.value;
+    setSelectedLanguage(val);
+  };
+
+  const handleDescCheckChange= (event: CustomEvent) => {
+    setIsDescChecked(event.detail.checked);
+  }
+
+  const handleDirectChange= (event: CustomEvent) => {
+    const val = event.detail.value;
+    setSelectedDirect(val);
+  };
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Sentence   {progressTxt}</IonTitle>
+          <IonTitle>Sentence  {progressTxt}</IonTitle>
           <table>
             <tr>
-            <td>{!isPlaying?(
+            <td>
+              {!isPlaying?(
           <IonButton onClick={()=>playAudio1Group()}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
           ):<IonButton onClick={()=>playStop()}>{stopButtonName}</IonButton>}</td><td><IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
             {groupInfoList.map(group => (
@@ -284,13 +343,21 @@ const Tab1: React.FC = () => {
                 {group.Group !== null ? dictGroup[group.Group] : "No Group"}
               </IonSelectOption>
             ))}
-          </IonSelect></td></tr></table>
+          </IonSelect>
+          </td>
+          
+          </tr></table>
+          <IonButtons slot="end">
+            <IonButton onClick={() => setShowLanguagePopover(true)}>
+            <IonIcon icon={menuOutline}/>
+            </IonButton>
+          </IonButtons>
           {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
           {isPlaying?(
           <IonCard style={{ minHeight:'16em'}}>
           <IonCardHeader>
             <IonCardTitle>{currentContent?.No} </IonCardTitle>
-            <IonCardSubtitle className="ion-text-wrap">{currentContent?.FIELD2}</IonCardSubtitle>
+            <IonCardSubtitle className="ion-text-wrap">{currentField0}</IonCardSubtitle>
             <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
           </IonCardHeader>
           <IonCardContent className="ion-text-wrap">{currentDesc}</IonCardContent>
@@ -304,7 +371,60 @@ const Tab1: React.FC = () => {
             <IonTitle size="large">Sentence</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonList>
+        <IonGrid>
+        <IonPopover
+        isOpen={showLanguagePopover}
+        onDidDismiss={() => setShowLanguagePopover(false)}
+      >
+          <IonRow>
+            <IonCol>
+              <IonList>
+                <IonRadioGroup value={selectedLanguage} onIonChange={handleLanguageChange}>
+                  <IonItem>
+                    <IonLabel>All</IonLabel>
+                    <IonRadio slot="start" value="all" />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Kor</IonLabel>
+                    <IonRadio slot="start" value="kor" />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>Eng</IonLabel>
+                    <IonRadio slot="start" value="eng" />
+                  </IonItem>
+                </IonRadioGroup>
+              </IonList>
+            </IonCol>
+            <IonCol>
+              <IonItem>
+                <IonLabel>Desc.</IonLabel>
+                <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
+              </IonItem>
+            </IonCol>
+            <IonCol>
+              <IonList>
+                <IonRadioGroup value={selectedDirect} onIonChange={handleDirectChange}>
+                  <IonItem>
+                    <IonLabel>Korean to English</IonLabel>
+                    <IonRadio slot="start" value="k2e" />
+                  </IonItem>
+                  <IonItem>
+                    <IonLabel>English to Korean</IonLabel>
+                    <IonRadio slot="start" value="e2k" />
+                  </IonItem>
+                </IonRadioGroup>
+              </IonList>
+            </IonCol>
+            <IonCol>
+              <IonLabel>Direction </IonLabel>
+              <IonButton onClick={()=>makeOrderList('forward')}><IonIcon icon={arrowForwardOutline}></IonIcon></IonButton>
+              <IonButton onClick={()=>makeOrderList('random')}><IonIcon icon={shuffleOutline}></IonIcon></IonButton>
+            </IonCol>
+          </IonRow>
+        </IonPopover>
+      <IonRow>
+    <IonCol>
+    <IonList>
           <IonListHeader> <h1>Sentence practice </h1></IonListHeader>
           <p style={{marginLeft:'0.5em'}}>{dictGroup[selectedGroup]}</p>
           {contents.map((content, index) => (
@@ -314,14 +434,28 @@ const Tab1: React.FC = () => {
                 <table><tr><td>{content.No}</td></tr><tr><td><IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
               </IonAvatar>
               <IonLabel className={currentIndex == index?'highlight':''}>
-                <h2 className="ion-text-wrap" style={{fontStyle:'Nanum Myeongjo'}}><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD2}</h2>
-                <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}> <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> {content.FIELD1}</h2>
+              {selectedLanguage != 'eng'?(
+                <h2 className="ion-text-wrap" style={{fontStyle:'Nanum Myeongjo'}}><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> 
+                <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton>
+                 {content.FIELD2}</h2>
+              ):''}
+              {selectedLanguage != 'kor'?(
+                <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}> 
+                <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> 
+                {content.FIELD1}</h2>
+              ):''}
+              {isDescChecked?(
                 <p className="ion-text-wrap">{content.DESC}</p>
+                ):''}
               </IonLabel>
             </IonItem>
             )
           ))}
         </IonList>
+    </IonCol>
+  </IonRow>
+</IonGrid>
+        
       </IonContent>
     </IonPage>
   );
