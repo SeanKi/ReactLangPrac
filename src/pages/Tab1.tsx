@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {IonGrid, IonRow, IonCol, IonButtons, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
-import ExploreContainer from '../components/ExploreContainer';
 import './Tab1.css';
 import ReactGA from 'react-ga';
 
@@ -32,6 +32,8 @@ type DictGroup = {
 let g_bPlay : boolean = false;
 
 const Tab1: React.FC = () => {
+  const param = useParams();
+  console.log(param);
   const buttonStyle = {
     padding: '3px 1px 3px 1px',
     borderRadius: '30%',
@@ -57,7 +59,10 @@ const Tab1: React.FC = () => {
   const [groupInfoList, setGroupInfoList] = useState<GroupInfo[]>([
         // ... Add more group info as needed
   ]);
-  const [selectedGroup, setSelectedGroup] = useState("1"); // Default selected group
+  let default_id = "1";
+  if (param.id)
+    default_id= param.id;
+  const [selectedGroup, setSelectedGroup] = useState(default_id); // Default selected group
   const [progressTxt, setProgressTxt] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -348,7 +353,7 @@ const Tab1: React.FC = () => {
           
           </tr></table>
           <IonButtons slot="end">
-            <IonButton onClick={() => setShowLanguagePopover(true)}>
+          <IonButton id="click-trigger">
             <IonIcon icon={menuOutline}/>
             </IonButton>
           </IonButtons>
@@ -371,37 +376,45 @@ const Tab1: React.FC = () => {
             <IonTitle size="large">Sentence</IonTitle>
           </IonToolbar>
         </IonHeader>
+
         <IonGrid>
-        <IonPopover
-        isOpen={showLanguagePopover}
-        onDidDismiss={() => setShowLanguagePopover(false)}
-      >
-          <IonRow>
-            <IonCol>
-              <IonList>
-                <IonRadioGroup value={selectedLanguage} onIonChange={handleLanguageChange}>
-                  <IonItem>
-                    <IonLabel>All</IonLabel>
-                    <IonRadio slot="start" value="all" />
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>Kor</IonLabel>
-                    <IonRadio slot="start" value="kor" />
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>Eng</IonLabel>
-                    <IonRadio slot="start" value="eng" />
-                  </IonItem>
-                </IonRadioGroup>
-              </IonList>
-            </IonCol>
-            <IonCol>
+        <IonPopover trigger="click-trigger" triggerAction="click">
+        <IonList>
+        <IonItem>
+<IonGrid>
+  <IonRow>
+    <IonCol size="6">
+      <IonList>
+        <IonRadioGroup value={selectedLanguage} onIonChange={handleLanguageChange}>
+          <IonItem>
+            <IonLabel>All</IonLabel>
+            <IonRadio slot="start" value="all" />
+          </IonItem>
+          <IonItem>
+            <IonLabel>Kor</IonLabel>
+            <IonRadio slot="start" value="kor" />
+          </IonItem>
+          <IonItem>
+            <IonLabel>Eng</IonLabel>
+            <IonRadio slot="start" value="eng" />
+          </IonItem>
+        </IonRadioGroup>
+      </IonList>
+    </IonCol>
+
+    <IonCol size="6">
+      <IonList>
+        <IonItem>
+          <IonLabel>Desc.</IonLabel>
+          <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
+        </IonItem>
+      </IonList>
+    </IonCol>
+  </IonRow>
+</IonGrid>
+          </IonItem>
+          
               <IonItem>
-                <IonLabel>Desc.</IonLabel>
-                <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
-              </IonItem>
-            </IonCol>
-            <IonCol>
               <IonList>
                 <IonRadioGroup value={selectedDirect} onIonChange={handleDirectChange}>
                   <IonItem>
@@ -414,12 +427,25 @@ const Tab1: React.FC = () => {
                   </IonItem>
                 </IonRadioGroup>
               </IonList>
-            </IonCol>
-            <IonCol>
+              </IonItem>
+              <IonItem>
               <IonLabel>Direction </IonLabel>
               <IonButton onClick={()=>makeOrderList('forward')}><IonIcon icon={arrowForwardOutline}></IonIcon></IonButton>
               <IonButton onClick={()=>makeOrderList('random')}><IonIcon icon={shuffleOutline}></IonIcon></IonButton>
+            </IonItem>
+        </IonList>
+          <IonRow>
+            <IonCol>
+              
             </IonCol>
+            
+            <IonCol>
+              
+            </IonCol>
+            <IonCol>
+              
+            </IonCol>
+           
           </IonRow>
         </IonPopover>
       <IonRow>
