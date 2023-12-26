@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import {IonGrid, IonRow, IonCol, IonButtons, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import { Storage } from '@ionic/storage';
+import {IonModal, IonChip, IonGrid, IonRow, IonCol, IonButtons, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import './Tab1.css';
 import ReactGA from 'react-ga';
@@ -32,8 +33,6 @@ type DictGroup = {
 let g_bPlay : boolean = false;
 
 const Tab1: React.FC = () => {
-  const param = useParams();
-  console.log(param);
   const buttonStyle = {
     padding: '3px 1px 3px 1px',
     borderRadius: '30%',
@@ -59,16 +58,20 @@ const Tab1: React.FC = () => {
   const [groupInfoList, setGroupInfoList] = useState<GroupInfo[]>([
         // ... Add more group info as needed
   ]);
-  let default_id = "1";
-  if (param.id)
-    default_id= param.id;
-  const [selectedGroup, setSelectedGroup] = useState(default_id); // Default selected group
+  const { id } = useParams<{ id: string }>();
+  const [selectedGroup, setSelectedGroup] = useState(id??"1"); // Default selected group
+  const location=useLocation();
+  const sch= location.search;
+  const params=new URLSearchParams(sch);
+  const grpId= params.get('grpId');
   const [progressTxt, setProgressTxt] = useState("");
+  const [endedResult, setEndedResult] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [contents, setContents] = useState<ContentType[]>([]);
   const [currentContent, setCurrentContent] = useState<ContentType>();
+  const [currentNo, setCurrentNo] = useState("");
   const [currentField, setCurrentField] = useState("");
   const [currentField0, setCurrentField0] = useState("");
   const [currentDesc, setCurrentDesc] = useState("");
@@ -83,7 +86,8 @@ const Tab1: React.FC = () => {
 
   const [showLanguagePopover, setShowLanguagePopover] = useState(false);
   const [showDescriptionPopover, setShowDescriptionPopover] = useState(false);
-
+  const [storage, setStorage] = useState<Storage | null>(null);
+  const [record, setRecord] = useState<{ key: string; value: any }[]>([]);
 
   let bPlay : boolean = false;
 
@@ -102,34 +106,11 @@ const Tab1: React.FC = () => {
 
   let timeID:number = -1;
 
-  const playStop =() => {
-    if (audioPlayer) {
-      audioPlayer.pause();
-      console.log("playStop audioPlayer.pause()");
-    } else {
-      console.log("playStop audioPlayer is null");
-    }
-    clearTimer();
-    setProgressTxt(progressTxt=>"");
-    playOff();
-  }
-
-  const clearTimer = () => {
+    const clearTimer = () => {
     if (timeID > -1) 
       window.clearTimeout(timeID);
     timeID = -1;
     console.log("clearTimer bPlay:" + bPlay);
-  }
-
-  function playOn () {
-    setIsPlaying(true);
-    g_bPlay = true;
-    console.log('playOn bPlay:' + g_bPlay);
-  }
-  function playOff () {
-    setIsPlaying(false);
-    g_bPlay = false;
-    console.log('playOff bPlay:' + g_bPlay);
   }
 
   function sortByNo(a: ContentType, b: ContentType): number {
@@ -206,8 +187,53 @@ const Tab1: React.FC = () => {
     return grpInfo;
     // const count = grpInfo?.Count as number;
   }
+  function playOn () {
+    setIsPlaying(true);
+    g_bPlay = true;
+    console.log('playOn bPlay:' + g_bPlay);
+  }
+  function playOff () {
+    setIsPlaying(false);
+    g_bPlay = false;
+    console.log('playOff bPlay:' + g_bPlay);
+  }
+
+  const playStop =() => {
+     if (audioPlayer) {
+      audioPlayer.pause();
+      console.log("playStop audioPlayer.pause()");
+    } else {
+      console.log("playStop audioPlayer is null");
+    }
+    clearTimer();
+    setProgressTxt(progressTxt=>"");
+    playOff();
+  }
+
+  let startTime:number;
+  function getCurrentTime(): number {
+    return new Date().getTime();
+  }
+  function formatElapsedTime(seconds: number): string {
+    let hours: number = Math.floor(seconds / 3600);
+    let minutes: number = Math.floor((seconds % 3600) / 60);
+    let remainingSeconds: number = seconds % 60;
+  
+    return `${hours}:${minutes}:${remainingSeconds.toFixed(0)}`;
+  }
+
+  function formatedTime(currentTime:Date) {
+      return currentTime.getFullYear() + '-' + 
+                    ('0' + (currentTime.getMonth() + 1)).slice(-2) + '-' + 
+                    ('0' + currentTime.getDate()).slice(-2) + ' ' + 
+                    ('0' + currentTime.getHours()).slice(-2) + ':' + 
+                    ('0' + currentTime.getMinutes()).slice(-2) + ':' + 
+                    ('0' + currentTime.getSeconds()).slice(-2);
+  }
 
   async function playAudio1Group() {
+    let started = new Date();
+    startTime = getCurrentTime();
     const grpInfo = selectGroup(selectedGroup, false); // groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup);
     const startIndex = grpInfo?.Index as number;
     const count = grpInfo?.Count as number;
@@ -216,20 +242,13 @@ const Tab1: React.FC = () => {
     setProgressTxt(progressTxt=>"Start!");
     playOn();
     setStopButtonName("Stop");
-    // let timer:number;
-    // const timerFn = async ()=> {
-    //   setProgress((index - startIndex)/count);
-    //   setBuffer((index - startIndex)/count);
-    //   await playAudio1Line (contents[index]);
-    //   index++;
-    //   timer = window.setTimeout(timerFn, 1);
-    // }
-    // timer = window.setTimeout(timerFn, 1);
+
     ReactGA.event({
       category: 'PlayAndStop',
       action: 'start',
       label: `Start ${grpInfo?.Index} ${grpInfo?.Group} ${startNo}`,
     });
+    let cnt = 0;
     let endNo = startNo;
     while(index < (startIndex + count)) {
       if (startNo !== contents[index].No) {
@@ -243,17 +262,25 @@ const Tab1: React.FC = () => {
         break;
       setCurrentIndex(index=>index+1);
       index++;
-      
+      cnt++;
     };
     setProgressTxt(progressTxt=>progressTxt + " Done!");
     setStopButtonName("Close");
 
+    let endTime = getCurrentTime();
+    let elapsedTime = endTime - startTime;
+    
+    let text = `No ${startNo} ~ ${endNo} / Count ${cnt} / Started ${formatedTime(started)} / Elapsed ${formatElapsedTime(elapsedTime/1000)} `;
+    await saveData(startTime.toString(), text);
+    loadDataAll();
+    setEndedResult(endedResult=>text);
+    console.log(text);
     ReactGA.event({
       category: 'PlayAndStop',
       action: 'stop',
       label: `End ${grpInfo?.Index} ${grpInfo?.Group} ${endNo}`,
     });
-    // playOff();
+    playOff();
   };
 
   const fetchData = async () => {
@@ -305,9 +332,40 @@ const Tab1: React.FC = () => {
       console.error('Error fetching data:', error);
     }
   };
+// 데이터 저장 함수
+const saveData = async (key: string, value: any): Promise<void> => {
+  if (storage)
+    await storage.set(key, value);
+};
 
-  useEffect(() => {
+// 데이터 불러오기 함수
+const loadData = async (key: string): Promise<any> => {
+  if (!storage) return;
+  return await storage.get(key);
+};
+
+const loadDataAll = async () => {
+  if (storage) {
+    const keys = await storage.keys();
+    const data = await Promise.all(
+      keys.map(async key => ({
+        key,
+        value: await storage.get(key),
+      }))
+    );
+    setRecord(data);
+  }
+};
+
+  const createStorage = async() => {
+    const storage = new Storage();
+    await storage.create();
+    setStorage(storage);
+  }
+
+ useEffect( () => {
     fetchData();
+    createStorage();
   }, []);
 
   const handleSelectChange = (event: CustomEvent) => {
@@ -331,25 +389,88 @@ const Tab1: React.FC = () => {
     const val = event.detail.value;
     setSelectedDirect(val);
   };
+  const modal = useRef<HTMLIonModalElement>(null);
+  const page = useRef(undefined);
 
+  const [canDismiss, setCanDismiss] = useState(true);
+  const [presentingElement, setPresentingElement] = useState<HTMLElement | undefined>(undefined);
+  function dismiss() {
+    modal.current?.dismiss();
+
+  }
+  function didPresent() {
+      console.log("didPresent");
+      playAudio1Group();
+  }
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Sentence  {progressTxt}</IonTitle>
+          
           <table>
             <tr>
             <td>
               {!isPlaying?(
-          <IonButton onClick={()=>playAudio1Group()}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
-          ):<IonButton onClick={()=>playStop()}>{stopButtonName}</IonButton>}</td><td><IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
-            {groupInfoList.map(group => (
-              <IonSelectOption key={group.Group} value={group.Group}>
-                {group.Group !== null ? dictGroup[group.Group] : "No Group"}
-              </IonSelectOption>
+          <IonButton  id="open-modal"><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
+          ):<IonButton onClick={()=>{setCanDismiss(false);playStop()}}>{stopButtonName}</IonButton>}
+
+          <IonModal ref={modal} trigger="open-modal" canDismiss={canDismiss} presentingElement={presentingElement} onDidPresent={didPresent}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>400Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> </IonTitle>
+              <IonButtons slot="end">
+              {!isPlaying?<IonButton onClick={() =>{dismiss()}}>Close</IonButton>:""}
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+          <IonCard style={{ minHeight:'16em'}}>
+          <IonCardHeader>
+            <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <IonChip outline={true}>{currentContent?.No}</IonChip>
+            
+             {isPlaying &&(
+              <IonButton fill="outline" onClick={() => {playStop();setCanDismiss(true);}}>
+                Stop
+              </IonButton>
+             )}
+            </IonCardTitle>
+            {isPlaying?(
+              <div>
+            <IonCardSubtitle className="ion-text-wrap big-size1">{currentField0}</IonCardSubtitle>
+            <IonCardSubtitle className="ion-text-wrap big-size1">{currentField}</IonCardSubtitle>
+            </div>
+            ):
+            <IonList>
+            {[...record].reverse().map((item, index) => (
+              <IonItem key={index}>
+                <IonLabel style={{
+                  fontSize: index === 0 ? '1.3em' : 'normal',
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word',
+                  fontWeight:  index === 0 ? 'bold':'normal'
+                }}>
+                  {item.value}
+                </IonLabel>
+              </IonItem>
             ))}
-          </IonSelect>
-          </td>
+            </IonList>
+          }
+          </IonCardHeader>
+          <IonCardContent className="ion-text-wrap"></IonCardContent>
+        </IonCard>
+          </IonContent>
+        </IonModal>
+            </td>
+            <td>
+              <IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
+              {groupInfoList.map(group => (
+                <IonSelectOption key={group.Group} value={group.Group}>
+                  {group.Group !== null ? dictGroup[group.Group] : "No Group"}
+                </IonSelectOption>
+              ))}
+            </IonSelect>
+            </td>
           
           </tr></table>
           <IonButtons slot="end">
@@ -367,7 +488,7 @@ const Tab1: React.FC = () => {
           </IonCardHeader>
           <IonCardContent className="ion-text-wrap">{currentDesc}</IonCardContent>
         </IonCard>
-):""}
+):<div>{endedResult}</div>}
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -376,88 +497,75 @@ const Tab1: React.FC = () => {
             <IonTitle size="large">Sentence</IonTitle>
           </IonToolbar>
         </IonHeader>
-
+        
         <IonGrid>
         <IonPopover trigger="click-trigger" triggerAction="click">
-        <IonList>
-        <IonItem>
-<IonGrid>
-  <IonRow>
-    <IonCol size="6">
-      <IonList>
-        <IonRadioGroup value={selectedLanguage} onIonChange={handleLanguageChange}>
-          <IonItem>
-            <IonLabel>All</IonLabel>
-            <IonRadio slot="start" value="all" />
-          </IonItem>
-          <IonItem>
-            <IonLabel>Kor</IonLabel>
-            <IonRadio slot="start" value="kor" />
-          </IonItem>
-          <IonItem>
-            <IonLabel>Eng</IonLabel>
-            <IonRadio slot="start" value="eng" />
-          </IonItem>
-        </IonRadioGroup>
-      </IonList>
-    </IonCol>
-
-    <IonCol size="6">
-      <IonList>
-        <IonItem>
-          <IonLabel>Desc.</IonLabel>
-          <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
-        </IonItem>
-      </IonList>
-    </IonCol>
-  </IonRow>
-</IonGrid>
-          </IonItem>
-          
+            <IonList>
               <IonItem>
-              <IonList>
-                <IonRadioGroup value={selectedDirect} onIonChange={handleDirectChange}>
-                  <IonItem>
-                    <IonLabel>Korean to English</IonLabel>
-                    <IonRadio slot="start" value="k2e" />
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>English to Korean</IonLabel>
-                    <IonRadio slot="start" value="e2k" />
-                  </IonItem>
-                </IonRadioGroup>
-              </IonList>
+                <IonGrid>
+                  <IonRow>
+                    <IonCol size="6">
+                      <IonList>
+                        <IonRadioGroup value={selectedLanguage} onIonChange={handleLanguageChange}>
+                          <IonItem>
+                            <IonLabel>All</IonLabel>
+                            <IonRadio slot="start" value="all" />
+                          </IonItem>
+                          <IonItem>
+                            <IonLabel>Kor</IonLabel>
+                            <IonRadio slot="start" value="kor" />
+                          </IonItem>
+                          <IonItem>
+                            <IonLabel>Eng</IonLabel>
+                            <IonRadio slot="start" value="eng" />
+                          </IonItem>
+                        </IonRadioGroup>
+                      </IonList>
+                    </IonCol>
+
+                    <IonCol size="6">
+                      <IonList>
+                        <IonItem>
+                          <IonLabel>Desc.</IonLabel>
+                          <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
+                        </IonItem>
+                      </IonList>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </IonItem>
+
+              <IonItem>
+                <IonList>
+                  <IonRadioGroup value={selectedDirect} onIonChange={handleDirectChange}>
+                    <IonItem>
+                      <IonLabel>Korean to English</IonLabel>
+                      <IonRadio slot="start" value="k2e" />
+                    </IonItem>
+                    <IonItem>
+                      <IonLabel>English to Korean</IonLabel>
+                      <IonRadio slot="start" value="e2k" />
+                    </IonItem>
+                  </IonRadioGroup>
+                </IonList>
               </IonItem>
               <IonItem>
-              <IonLabel>Direction </IonLabel>
-              <IonButton onClick={()=>makeOrderList('forward')}><IonIcon icon={arrowForwardOutline}></IonIcon></IonButton>
-              <IonButton onClick={()=>makeOrderList('random')}><IonIcon icon={shuffleOutline}></IonIcon></IonButton>
-            </IonItem>
-        </IonList>
-          <IonRow>
-            <IonCol>
-              
-            </IonCol>
-            
-            <IonCol>
-              
-            </IonCol>
-            <IonCol>
-              
-            </IonCol>
-           
-          </IonRow>
-        </IonPopover>
+                <IonLabel>Direction </IonLabel>
+                <IonButton onClick={() => makeOrderList('forward')}><IonIcon icon={arrowForwardOutline}></IonIcon></IonButton>
+                <IonButton onClick={() => makeOrderList('random')}><IonIcon icon={shuffleOutline}></IonIcon></IonButton>
+              </IonItem>
+            </IonList>
+          </IonPopover>
       <IonRow>
     <IonCol>
     <IonList>
-          <IonListHeader> <h1>Sentence practice </h1></IonListHeader>
+          <IonListHeader> <h1>Sentence practice</h1></IonListHeader>
           <p style={{marginLeft:'0.5em'}}>{dictGroup[selectedGroup]}</p>
           {contents.map((content, index) => (
             content.Group == selectedGroup && (
             <IonItem key={content.No}>
               <IonAvatar slot="start" className="avatarStyle">
-                <table><tr><td>{content.No}</td></tr><tr><td><IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
+                <table><tr><td><IonChip outline={true}>{content.No}</IonChip></td></tr><tr><td><IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
               </IonAvatar>
               <IonLabel className={currentIndex == index?'highlight':''}>
               {selectedLanguage != 'eng'?(

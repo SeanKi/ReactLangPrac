@@ -29,3 +29,22 @@
     --color: white;
     --width: 320px;
   }
+
+  html {
+    --ion-dynamic-font: var(--ion-default-dynamic-font);
+    --ion-font-family: 'Comic Sans MS';
+  }
+  
+  .big-size1 {
+    font-size: 5vw/** 2.5em**/;
+  }
+
+  ion-modal {
+    --width: 98vw;
+    --backdrop-opacity: var(--ion-backdrop-opacity, 0.50);
+    backdrop-filter: blur(3px);
+  }
+
+  .large-chip {
+    font-size: 1.0em; /* 폰트 크기 조절 */
+}
