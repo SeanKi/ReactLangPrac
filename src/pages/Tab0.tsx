@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Storage } from '@ionic/storage';
-import {IonModal, IonChip, IonGrid, IonRow, IonCol, IonSegment, IonSegmentButton, IonButtons, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
+import { IonModal, IonChip, IonGrid, IonRow, IonCol, IonSegment, IonSegmentButton, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import { stopCircleOutline, pauseCircleOutline } from 'ionicons/icons';
 import './Tab0.css';
@@ -32,7 +32,7 @@ let g_bPlay : boolean = false;
 let g_bPause : boolean = false;
 
 
-const Tab1: React.FC = () => {
+const Tab0: React.FC = () => {
   const buttonStyle = {
     padding: '3px 1px 3px 1px',
     borderRadius: '30%',
@@ -89,6 +89,8 @@ const Tab1: React.FC = () => {
   const [startPauseTime, setStartPauseTime] = useState<Date | null>(null);
   const [currentPauseTime, setCurrentPauseTime] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('Mid');
+  const [inputValue, setInputValue] = useState({ High: 0.7, Mid: 1, Low: 1.8 });
+  const [inputInterVal, setInputInterVal] = useState({ Lang: 0.7, Sent: 1 });
 
   let bPlay : boolean = false;
 
@@ -111,7 +113,7 @@ const Tab1: React.FC = () => {
     if (timeID > -1) 
       window.clearInterval(timeID);
     timeID = -1;
-    console.log("clearTimer bPlay:" + bPlay);
+    // console.log("clearTimer bPlay:" + bPlay);
   }
 
   function sortByNo(a: ContentType, b: ContentType): number {
@@ -155,11 +157,13 @@ const Tab1: React.FC = () => {
             waitTime = audio.duration * waitRate * 1000;
           }
           if (selectedLevel == 'High') {
-            waitTime *= 0.7;
+            waitTime *= inputValue.High;
+          } else if (selectedLevel == 'Mid') {
+            waitTime *= inputValue.Mid;
           } else if (selectedLevel == 'Low') {
-            waitTime *= 1.8;
+            waitTime *= inputValue.Low;
           }
-
+          console.log("waitTime:" + waitTime);
           clearTimer();
           if (!g_bPlay) return; 
           timeID =  window.setInterval(() => {
@@ -179,18 +183,18 @@ const Tab1: React.FC = () => {
     setCurrentHint(content.Hint??'');
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
-      await playAudioAndWait(content.KorFile, 0.7);
+      await playAudioAndWait(content.KorFile, inputInterVal.Lang);
       if (!g_bPlay) return; //isPlaying)
       setCurrentField(content.FIELD1 as string);
       setCurrentDesc(content.DESC as string);
-      await playAudioAndWait(content.EngFile, 1);
+      await playAudioAndWait(content.EngFile, inputInterVal.Sent);
     } else {
       setCurrentField0(content.FIELD1==null?'':content.FIELD1);
-      await playAudioAndWait(content.EngFile, 0.7);
+      await playAudioAndWait(content.EngFile, inputInterVal.Lang);
       if (!g_bPlay) return; //isPlaying)
       setCurrentField(content.FIELD2 as string);
       setCurrentDesc(content.DESC as string);
-      await playAudioAndWait(content.KorFile, 1);
+      await playAudioAndWait(content.KorFile, inputInterVal.Sent);
     }
   };
 
@@ -642,29 +646,51 @@ const loadDataAll = async () => {
               <IonItem>
                 <IonLabel>Interval </IonLabel>
                 <IonButtons>
-                <IonButton
-                  onClick={() => selectLevel('High')}
-                  fill={selectedLevel === 'High' ? 'solid' : 'outline'}
-                  color={selectedLevel === 'High' ? 'primary' : 'default'}
-                >
-                  High
-                </IonButton>
-                <IonButton
-                  onClick={() => selectLevel('Mid')}
-                  fill={selectedLevel === 'Mid' ? 'solid' : 'outline'}
-                  color={selectedLevel === 'Mid' ? 'primary' : 'default'}
-                >
-                  Middle
-                </IonButton>
-                <IonButton
-                  onClick={() => selectLevel('Low')}
-                  fill={selectedLevel === 'Low' ? 'solid' : 'outline'}
-                  color={selectedLevel === 'Low' ? 'primary' : 'default'}
-                >
-                  Low
-                </IonButton>
+                  <IonButton
+                    onClick={() => selectLevel('High')}
+                    fill={selectedLevel === 'High' ? 'solid' : 'outline'}
+                    color={selectedLevel === 'High' ? 'primary' : 'default'}
+                  >
+                    High
+                  </IonButton>
+                  <IonButton
+                    onClick={() => selectLevel('Mid')}
+                    fill={selectedLevel === 'Mid' ? 'solid' : 'outline'}
+                    color={selectedLevel === 'Mid' ? 'primary' : 'default'}
+                  >
+                    Middle
+                  </IonButton>
+                  <IonButton
+                    onClick={() => selectLevel('Low')}
+                    fill={selectedLevel === 'Low' ? 'solid' : 'outline'}
+                    color={selectedLevel === 'Low' ? 'primary' : 'default'}
+                  >
+                    Low
+                  </IonButton>
                 </IonButtons>
               </IonItem>
+              
+              <IonItem>
+                <IonLabel></IonLabel>
+                <IonButtons>
+                  <IonInput type="number" fill="outline" labelPlacement="floating" label="H" value={inputValue.High} className="fixed-size-input"
+                    onIonChange={e => setInputValue({ ...inputValue, High: parseFloat(e.detail.value!) })}></IonInput>
+                  <IonInput type="number" fill="outline" labelPlacement="floating" label="M" value={inputValue.Mid} className="fixed-size-input"
+                    onIonChange={e => setInputValue({ ...inputValue, Mid: parseFloat(e.detail.value!) })}></IonInput>
+                  <IonInput type="number" fill="outline" labelPlacement="floating" label="L" value={inputValue.Low} className="fixed-size-input"
+                    onIonChange={e => setInputValue({ ...inputValue, Low: parseFloat(e.detail.value!) })}></IonInput>
+                </IonButtons>
+              </IonItem>
+              <IonItem>
+                <IonLabel></IonLabel>
+                <IonButtons>
+                  <IonInput labelPlacement="floating" label="Lang" type="number" fill="outline" value={inputInterVal.Lang} maxlength={3} style={{ width: '6em' }}
+                    onIonChange={e => setInputInterVal({ ...inputInterVal, Lang: parseFloat(e.detail.value!) })}></IonInput>
+                  <IonInput labelPlacement="floating" label="Sentence" type="number" fill="outline" value={inputInterVal.Sent} maxlength={3} style={{ width: '6em' }}
+                    onIonChange={e => setInputInterVal({ ...inputInterVal, Sent: parseFloat(e.detail.value!) })}></IonInput>
+                </IonButtons>
+              </IonItem>
+
             </IonList>
           </IonPopover>
       <IonRow>
@@ -706,4 +732,4 @@ const loadDataAll = async () => {
   );
 };
 
-export default Tab1;
+export default Tab0;

@@ -57,4 +57,13 @@
 
   .large-chip {
     font-size: 1.0em; /* 폰트 크기 조절 */
-}
+  }
+
+  .fixed-size-input {
+    width: 4em;
+    height: 0.8em;
+  }
+
+  .label-text {
+    margin-top: 0.5em; /* Adjust as needed */
+  }
