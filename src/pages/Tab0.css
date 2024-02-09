@@ -36,18 +36,23 @@
   }
   
   .size-big {
-    font-size: 5vw/** 2.5em**/;
+    font-size: 4.5vw/** 2.5em**/;
   }
   .size-mid {
-    font-size: 4.75vw;
+    font-size: 4.10vw;
   }
   .size-small {
-    font-size: 4.5vw;
+    font-size: 3.70vw;
   }
   ion-modal {
     --width: 98vw;
     --backdrop-opacity: var(--ion-backdrop-opacity, 0.50);
     backdrop-filter: blur(3px);
+  }
+
+  ion-modal.modal-small {
+    --width: 80vw;
+    --height: 25em;
   }
 
   .large-chip {

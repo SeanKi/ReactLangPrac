@@ -30,3 +30,6 @@ yarn-error.log*
 dist
 
 resources/android/**/*
+android
+public
+vite.config.ts.timestamp-1702796251660-6c9aa9d82bb88.mjs

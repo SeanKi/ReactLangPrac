@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Storage } from '@ionic/storage';
-import {IonModal, IonChip, IonGrid, IonRow, IonCol, IonButtons, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
+import {IonModal, IonChip, IonGrid, IonRow, IonCol, IonSegment, IonSegmentButton, IonButtons, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
-import './Tab1.css';
-import ReactGA from 'react-ga';
-
-ReactGA.initialize('UA-000000-01');
-ReactGA.pageview(window.location.pathname + window.location.search);
+import { stopCircleOutline, pauseCircleOutline } from 'ionicons/icons';
+import './Tab0.css';
 
 type ContentType = {
   No: string | null;
@@ -18,6 +15,7 @@ type ContentType = {
   DESC: string | null;
   EngFile: string | null;
   KorFile: string | null;
+  Hint: string | null;
 };
 
 type GroupInfo = {
@@ -31,6 +29,8 @@ type DictGroup = {
 };
 
 let g_bPlay : boolean = false;
+let g_bPause : boolean = false;
+
 
 const Tab1: React.FC = () => {
   const buttonStyle = {
@@ -44,23 +44,16 @@ const Tab1: React.FC = () => {
   };
   
   const dictGroup: DictGroup = {
-    "1": "1 문장의5형식",
-    "2": "2 명사,대명사,관사 등",
-    "3": "3 형용사,부사",
-    "4": "4 부사/동사/조동사/시제/진행형",
-    "5": "5 구/절/부정사",
-    "6": "6 동명사,분사,비교,완료,수동태,관계대명사,관계부사",
-    "7": "7 접속사/가정법, 기타",
+    "12": "문법Part1",
+    "13": "문법Part2",
     "8": "8 50잉글리시 0~49",
     "9": "9 50잉글리시 50~99",
-    "10": "10 짧은표현 200",
-    "11": "11 응용문장 300"
   };
   const [groupInfoList, setGroupInfoList] = useState<GroupInfo[]>([
         // ... Add more group info as needed
   ]);
   const { id } = useParams<{ id: string }>();
-  const [selectedGroup, setSelectedGroup] = useState(id??"1"); // Default selected group
+  const [selectedGroup, setSelectedGroup] = useState(id??"12"); // Default selected group
   const location=useLocation();
   const sch= location.search;
   const params=new URLSearchParams(sch);
@@ -75,6 +68,7 @@ const Tab1: React.FC = () => {
   const [currentNo, setCurrentNo] = useState("");
   const [currentField, setCurrentField] = useState("");
   const [currentField0, setCurrentField0] = useState("");
+  const [currentHint, setCurrentHint] = useState("");
   const [currentDesc, setCurrentDesc] = useState("");
   const [stopButtonName, setStopButtonName] = useState("STOP");
 
@@ -90,6 +84,11 @@ const Tab1: React.FC = () => {
   const [showDescriptionPopover, setShowDescriptionPopover] = useState(false);
   const [storage, setStorage] = useState<Storage | null>(null);
   const [record, setRecord] = useState<{ key: string; value: any }[]>([]);
+  
+  const [showModal, setShowModal] = useState(false);
+  const [startPauseTime, setStartPauseTime] = useState<Date | null>(null);
+  const [currentPauseTime, setCurrentPauseTime] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState('Mid');
 
   let bPlay : boolean = false;
 
@@ -110,7 +109,7 @@ const Tab1: React.FC = () => {
 
     const clearTimer = () => {
     if (timeID > -1) 
-      window.clearTimeout(timeID);
+      window.clearInterval(timeID);
     timeID = -1;
     console.log("clearTimer bPlay:" + bPlay);
   }
@@ -141,6 +140,11 @@ const Tab1: React.FC = () => {
     }
   }
 
+  function selectLevel(level_:string) {
+    setSelectedLevel(level_);
+
+  }
+
   const playAudioAndWait = (fileName: string | null, waitRate: number) => {
     return new Promise<void>((resolve) => {
       let audio = playAudio(fileName);
@@ -150,8 +154,17 @@ const Tab1: React.FC = () => {
           if (audio.duration && waitRate) {
             waitTime = audio.duration * waitRate * 1000;
           }
+          if (selectedLevel == 'High') {
+            waitTime *= 0.7;
+          } else if (selectedLevel == 'Low') {
+            waitTime *= 1.8;
+          }
+
           clearTimer();
-          timeID =  window.setTimeout(() => {
+          if (!g_bPlay) return; 
+          timeID =  window.setInterval(() => {
+            if (g_bPause) return; //
+            clearTimer();
             resolve();
           }, waitTime);
         };
@@ -163,6 +176,7 @@ const Tab1: React.FC = () => {
     setCurrentContent(content);
     setCurrentField(""); // secondLine
     setCurrentDesc("");
+    setCurrentHint(content.Hint??'');
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
       await playAudioAndWait(content.KorFile, 0.7);
@@ -207,11 +221,13 @@ const Tab1: React.FC = () => {
   function playOn () {
     setIsPlaying(true);
     g_bPlay = true;
+    g_bPause = false;
     console.log('playOn bPlay:' + g_bPlay);
   }
   function playOff () {
     setIsPlaying(false);
     g_bPlay = false;
+    g_bPause = false;
     console.log('playOff bPlay:' + g_bPlay);
   }
 
@@ -226,6 +242,16 @@ const Tab1: React.FC = () => {
     setProgressTxt(progressTxt=>"");
     playOff();
   }
+
+  const playPause =() => {
+    if (g_bPlay && !g_bPause) {
+      g_bPause = true;
+      // alert("Paused");
+      // g_bPause = false;
+      handleOpenModal();
+    }
+  }
+
 
   let startTime:number;
   function getCurrentTime(): number {
@@ -260,11 +286,6 @@ const Tab1: React.FC = () => {
     playOn();
     setStopButtonName("Stop");
 
-    ReactGA.event({
-      category: 'PlayAndStop',
-      action: 'start',
-      label: `Start ${grpInfo?.Index} ${grpInfo?.Group} ${startNo}`,
-    });
     let cnt = 0;
     let endNo = startNo;
     while(index < (startIndex + count)) {
@@ -292,16 +313,11 @@ const Tab1: React.FC = () => {
     loadDataAll();
     setEndedResult(endedResult=>text);
     console.log(text);
-    ReactGA.event({
-      category: 'PlayAndStop',
-      action: 'stop',
-      label: `End ${grpInfo?.Index} ${grpInfo?.Group} ${endNo}`,
-    });
     playOff();
   };
 
   const fetchData = async () => {
-    const xmlFilePath = '/400Sentences.xml'; // XML 파일 경로를 수정하세요
+    const xmlFilePath = '/180Sentences.xml'; // XML 파일 경로를 수정하세요
     
     try {
       const response = await fetch(xmlFilePath);
@@ -317,6 +333,7 @@ const Tab1: React.FC = () => {
         const field1 = contentNode.querySelector('FIELD1');
         const field2 = contentNode.querySelector('FIELD2');
         const desc = contentNode.querySelector('DESC');
+        const hint = contentNode.querySelector('HINT');
         return {
           No: contentNode.getAttribute('No'),
           Type: contentNode.getAttribute('Type'),
@@ -325,7 +342,8 @@ const Tab1: React.FC = () => {
           FIELD2: field2?field2.textContent: '',
           EngFile: field1?field1.getAttribute('Name'):'',
           KorFile: field2?field2.getAttribute('Name'):'',
-          DESC: desc?desc.textContent: null,
+          DESC: desc?desc.textContent: '',
+          Hint: hint?hint.textContent: '',
         };
       });
       if (groupInfoList.length == 0) {
@@ -383,8 +401,25 @@ const loadDataAll = async () => {
  useEffect( () => {
     fetchData();
     createStorage();
-  }, []);
-
+    let interval:any = null;
+    if (showModal && startPauseTime) {
+      interval = setInterval(() => {
+        const now:Date = new Date();
+        const diff = new Date(now - startPauseTime);
+        const hours = diff.getUTCHours();
+        const minutes = diff.getUTCMinutes();
+        const seconds = diff.getUTCSeconds();
+        setCurrentPauseTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showModal, startPauseTime]);
+  
+  const handleOpenModal = () => {
+    setShowModal(true);
+    setStartPauseTime(new Date());
+  };
+  
   const handleSelectChange = (event: CustomEvent) => {
     const selectedValue = event.detail.value;
     selectGroup(selectedValue, true); //
@@ -442,10 +477,23 @@ const loadDataAll = async () => {
           <IonButton onClick={()=>{openModal();}}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
           ):<IonButton onClick={()=>{setCanDismiss(false);playStop()}}>{stopButtonName}</IonButton>}
 
-          <IonModal ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} >
+        <IonModal  className="modal-small" isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>400Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> </IonTitle>
+              <IonTitle>Paused</IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <p>Paused</p>
+            <p>Elapsed Time: {currentPauseTime}</p>
+            <IonButton onClick={() => {setShowModal(false);g_bPause=false;}}>Close</IonButton>
+          </IonContent>
+        </IonModal>
+
+          <IonModal className="modal-big" ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} >
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>180 Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip></IonTitle>
               <IonButtons slot="end">
               {!isPlaying?<IonButton onClick={() =>{dismiss()}}>Close</IonButton>:""}
               </IonButtons>
@@ -456,17 +504,26 @@ const loadDataAll = async () => {
           <IonCardHeader>
             <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <IonChip outline={true}>{currentContent?.No}</IonChip>
-            
+              <span>{currentHint}</span>
              {isPlaying &&(
-              <IonButton fill="outline" onClick={() => {playStop();setCanDismiss(true);}}>
+               <div style={{ display: 'flex', alignItems: 'center' }}>
+              <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
+                <IonIcon icon={stopCircleOutline} slot="start" />
                 Stop
               </IonButton>
+              <IonButton onClick={() => { playPause(); }}>
+                <IonIcon icon={pauseCircleOutline} slot="start" />
+                Pause
+              </IonButton>
+              </div>
              )}
+            
+
             </IonCardTitle>
             {(isPlaying || isShowLine)?(
               <div>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
+            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 35 ? 'size-small' : currentField0.length >= 22 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
+            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 35 ? 'size-small' : currentField0.length >= 22 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
             </div>
             ):
             <IonList>
@@ -581,6 +638,32 @@ const loadDataAll = async () => {
                 <IonLabel>Direction </IonLabel>
                 <IonButton onClick={() => makeOrderList('forward')}><IonIcon icon={arrowForwardOutline}></IonIcon></IonButton>
                 <IonButton onClick={() => makeOrderList('random')}><IonIcon icon={shuffleOutline}></IonIcon></IonButton>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Interval </IonLabel>
+                <IonButtons>
+                <IonButton
+                  onClick={() => selectLevel('High')}
+                  fill={selectedLevel === 'High' ? 'solid' : 'outline'}
+                  color={selectedLevel === 'High' ? 'primary' : 'default'}
+                >
+                  High
+                </IonButton>
+                <IonButton
+                  onClick={() => selectLevel('Mid')}
+                  fill={selectedLevel === 'Mid' ? 'solid' : 'outline'}
+                  color={selectedLevel === 'Mid' ? 'primary' : 'default'}
+                >
+                  Middle
+                </IonButton>
+                <IonButton
+                  onClick={() => selectLevel('Low')}
+                  fill={selectedLevel === 'Low' ? 'solid' : 'outline'}
+                  color={selectedLevel === 'Low' ? 'primary' : 'default'}
+                >
+                  Low
+                </IonButton>
+                </IonButtons>
               </IonItem>
             </IonList>
           </IonPopover>
