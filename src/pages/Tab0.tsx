@@ -409,7 +409,7 @@ const loadDataAll = async () => {
     if (showModal && startPauseTime) {
       interval = setInterval(() => {
         const now:Date = new Date();
-        const diff = new Date(now - startPauseTime);
+        const diff = new Date(now.getTime() - startPauseTime.getTime());
         const hours = diff.getUTCHours();
         const minutes = diff.getUTCMinutes();
         const seconds = diff.getUTCSeconds();
