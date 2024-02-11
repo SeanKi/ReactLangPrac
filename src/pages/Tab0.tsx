@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Storage } from '@ionic/storage';
-import { IonModal, IonChip, IonGrid, IonRow, IonCol, IonSegment, IonSegmentButton, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
+import { IonModal, IonChip, IonBadge, IonGrid, IonRow, IonCol, IonText, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import { stopCircleOutline, pauseCircleOutline } from 'ionicons/icons';
 import './Tab0.css';
@@ -31,6 +31,40 @@ type DictGroup = {
 let g_bPlay : boolean = false;
 let g_bPause : boolean = false;
 
+type TextState = 'gray' | 'blinking' | 'black';
+
+
+const TextComponents: React.FC<{ text: string, playState: string }> = ({ text, playState }) => {
+  const getColor = (state:string) => {
+    switch (state) {
+      case 'gray': return 'gray';
+      case 'blinking': return 'black';
+      case 'black': return 'black';
+    }
+  };
+
+  const getAnimation = (state:string) => {
+    return state === 'blinking' ? 'blinking 1s infinite' : 'none';
+  };
+  let state1 = '', state2 = '';
+  if (playState === text) {
+    state1 = 'blinking';
+    state2 = 'gray';
+  } else if (playState === (text +'>')) {
+    state1 = 'black';
+    state2 = 'blinking';
+  } else  {
+    state1 = 'gray';
+    state2 = 'gray';
+  }
+
+  return (
+    <>
+    <span style={{ color: getColor(state1), animation: getAnimation(state1) }}>{text}</span>
+    <span style={{ color: getColor(state2), animation: getAnimation(state2) }}>▶</span>
+    </>
+  );
+};
 
 const Tab0: React.FC = () => {
   const buttonStyle = {
@@ -62,6 +96,7 @@ const Tab0: React.FC = () => {
   const [endedResult, setEndedResult] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentCount, setCurrentCount] = useState(0);
 
   const [contents, setContents] = useState<ContentType[]>([]);
   const [currentContent, setCurrentContent] = useState<ContentType>();
@@ -91,6 +126,7 @@ const Tab0: React.FC = () => {
   const [selectedLevel, setSelectedLevel] = useState('Mid');
   const [inputValue, setInputValue] = useState({ High: 0.7, Mid: 1, Low: 1.8 });
   const [inputInterVal, setInputInterVal] = useState({ Lang: 0.7, Sent: 1 });
+  const [playState, setPlayState] = useState('A');
 
   let bPlay : boolean = false;
 
@@ -147,8 +183,9 @@ const Tab0: React.FC = () => {
 
   }
 
-  const playAudioAndWait = (fileName: string | null, waitRate: number) => {
+  const playAudioAndWait = (fileName: string | null, waitRate: number, sentenceOrder: string) => {
     return new Promise<void>((resolve) => {
+       setPlayState(prevState=>sentenceOrder);
       let audio = playAudio(fileName);
       if (audio) {
         audio.onended = function () {
@@ -166,6 +203,7 @@ const Tab0: React.FC = () => {
           console.log("waitTime:" + waitTime);
           clearTimer();
           if (!g_bPlay) return; 
+          setPlayState(prevState=>sentenceOrder + '>');
           timeID =  window.setInterval(() => {
             if (g_bPause) return; //
             clearTimer();
@@ -183,18 +221,18 @@ const Tab0: React.FC = () => {
     setCurrentHint(content.Hint??'');
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
-      await playAudioAndWait(content.KorFile, inputInterVal.Lang);
+      await playAudioAndWait(content.KorFile, inputInterVal.Lang, 'A');
       if (!g_bPlay) return; //isPlaying)
       setCurrentField(content.FIELD1 as string);
       setCurrentDesc(content.DESC as string);
-      await playAudioAndWait(content.EngFile, inputInterVal.Sent);
+      await playAudioAndWait(content.EngFile, inputInterVal.Sent, 'B');
     } else {
       setCurrentField0(content.FIELD1==null?'':content.FIELD1);
-      await playAudioAndWait(content.EngFile, inputInterVal.Lang);
+      await playAudioAndWait(content.EngFile, inputInterVal.Lang, 'A');
       if (!g_bPlay) return; //isPlaying)
       setCurrentField(content.FIELD2 as string);
       setCurrentDesc(content.DESC as string);
-      await playAudioAndWait(content.KorFile, inputInterVal.Sent);
+      await playAudioAndWait(content.KorFile, inputInterVal.Sent, 'B');
     }
   };
 
@@ -220,7 +258,6 @@ const Tab0: React.FC = () => {
     if (bFirst) 
       setCurrentIndex(startIndex);
     return grpInfo;
-    // const count = grpInfo?.Count as number;
   }
   function playOn () {
     setIsPlaying(true);
@@ -286,6 +323,7 @@ const Tab0: React.FC = () => {
     const count = grpInfo?.Count as number;
     let index = currentIndex;
     const startNo = contents[index].No;
+    setCurrentCount(count_=>count);
     setProgressTxt(progressTxt=>"Start!");
     playOn();
     setStopButtonName("Stop");
@@ -295,10 +333,11 @@ const Tab0: React.FC = () => {
     while(index < (startIndex + count)) {
       if (startNo !== contents[index].No) {
         endNo = contents[index].No;
-        setProgressTxt(progressTxt=>startNo + " ~ " + contents[index].No);
+        //setProgressTxt(progressTxt=>startNo + " ~ " + contents[index].No);
       }
       setProgress((index - startIndex)/count);
       setBuffer((index - startIndex)/count);
+      setProgressTxt(progressTxt=> `${index+1}/${count}`);
       await playAudio1Line (contents[index]);
       if (!g_bPlay) //isPlaying
         break;
@@ -306,7 +345,12 @@ const Tab0: React.FC = () => {
       index++;
       cnt++;
     };
-    setProgressTxt(progressTxt=>progressTxt + " Done!");
+    if (!g_bPlay) //isPlaying
+    {
+      setProgressTxt(progressTxt=>"Stopped!");  
+    } else {
+      setProgressTxt(progressTxt=>"Done!");
+    }
     setStopButtonName("Close");
 
     let endTime = getCurrentTime();
@@ -497,7 +541,17 @@ const loadDataAll = async () => {
           <IonModal className="modal-big" ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} >
           <IonHeader>
             <IonToolbar>
-              <IonTitle>180 Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip></IonTitle>
+              <IonTitle>180 Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> 
+                {isPlaying &&(
+                  <>
+                <TextComponents text='A' playState={playState} />
+                <TextComponents text='B' playState={playState} />
+                <IonText style={{ marginLeft: '10px' }} className="primary-background white-text border-round font-size-small">{progressTxt}</IonText>
+                <IonProgressBar value={(currentIndex+1)/currentCount} color="primary" style={{ marginLeft: '10px', width: '100px' }}></IonProgressBar>
+                </>
+                )}
+              </IonTitle>
+
               <IonButtons slot="end">
               {!isPlaying?<IonButton onClick={() =>{dismiss()}}>Close</IonButton>:""}
               </IonButtons>
@@ -508,9 +562,9 @@ const loadDataAll = async () => {
           <IonCardHeader>
             <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <IonChip outline={true}>{currentContent?.No}</IonChip>
-              <span>{currentHint}</span>
+              {isPlaying &&(<IonText>{currentHint}</IonText>)}
              {isPlaying &&(
-               <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
               <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
                 <IonIcon icon={stopCircleOutline} slot="start" />
                 Stop

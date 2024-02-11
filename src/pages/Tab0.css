@@ -67,3 +67,26 @@
   .label-text {
     margin-top: 0.5em; /* Adjust as needed */
   }
+
+  @keyframes blinking {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  .primary-background {
+    background-color: var(--ion-color-primary);
+    padding: 5px; // Add some padding so the background color shows around the text
+  }
+  
+  .white-text {
+    color: white;
+  }
+
+  .border-round {
+    border-radius: 20%;
+  }
+
+  .font-size-small {
+    font-size:0.7em;
+  }
