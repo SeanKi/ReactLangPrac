@@ -36,14 +36,16 @@
   }
   
   .size-big {
-    font-size: 4.5vw/** 2.5em**/;
+    font-size: 5vw/** 2.5em**/;
   }
+
   .size-mid {
-    font-size: 4.10vw;
+    font-size: 4.5vw;
   }
   .size-small {
-    font-size: 3.70vw;
+    font-size: 3.8vw;
   }
+
   ion-modal {
     --width: 98vw;
     --backdrop-opacity: var(--ion-backdrop-opacity, 0.50);
@@ -76,7 +78,7 @@
 
   .primary-background {
     background-color: var(--ion-color-primary);
-    padding: 5px; // Add some padding so the background color shows around the text
+    padding: 5px; /* Add some padding so the background color shows around the text */
   }
   
   .white-text {
@@ -89,4 +91,10 @@
 
   .font-size-small {
     font-size:0.7em;
+  }
+
+  @media (orientation: portrait) {
+    .hide-on-small {
+      display: none;
+    }
   }

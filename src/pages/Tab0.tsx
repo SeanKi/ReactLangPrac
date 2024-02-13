@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Storage } from '@ionic/storage';
-import { IonModal, IonChip, IonBadge, IonGrid, IonRow, IonCol, IonText, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
+import { IonModal, IonChip, IonRange, IonBadge, IonGrid, IonRow, IonCol, IonText, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
-import { stopCircleOutline, pauseCircleOutline } from 'ionicons/icons';
+import { stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/icons';
+// import { useOrientation } from 'react-use';
 import './Tab0.css';
+
+// const orientation = useOrientation(); // it doesn't work.
 
 type ContentType = {
   No: string | null;
@@ -30,7 +33,7 @@ type DictGroup = {
 
 let g_bPlay : boolean = false;
 let g_bPause : boolean = false;
-
+let g_sLevel : string = '2'; //@SeanKi: this is the mirror value of selectedLevel. for some reason, selectedLevel was not updated in playAudio1Group() function.
 type TextState = 'gray' | 'blinking' | 'black';
 
 
@@ -123,8 +126,8 @@ const Tab0: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [startPauseTime, setStartPauseTime] = useState<Date | null>(null);
   const [currentPauseTime, setCurrentPauseTime] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState('Mid');
-  const [inputValue, setInputValue] = useState({ High: 0.7, Mid: 1, Low: 1.8 });
+  const [selectedLevel, setSelectedLevel] = useState('2');
+  const [inputValue, setInputValue] = useState({ 1: 0.7, 2: 1, 3: 1.8 });
   const [inputInterVal, setInputInterVal] = useState({ Lang: 0.7, Sent: 1 });
   const [playState, setPlayState] = useState('A');
 
@@ -132,17 +135,7 @@ const Tab0: React.FC = () => {
 
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
-  const playAudio = (fileName: string | null) => {
-    if (audioPlayer) {
-      audioPlayer.pause();
-    }
-
-    const newAudioPlayer = new Audio(`/audio/${fileName}.mp3`);
-    newAudioPlayer.play();
-    setAudioPlayer(newAudioPlayer);
-    return newAudioPlayer;
-  };
-
+  
   let timeID:number = -1;
 
     const clearTimer = () => {
@@ -183,24 +176,99 @@ const Tab0: React.FC = () => {
 
   }
 
+  function selectGroup(selectedGroup_ : string, bFirst : boolean) {
+    setSelectedGroup(selectedGroup_);
+    const grpInfo = groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup_);
+    const startIndex = grpInfo?.Index as number;
+    if (bFirst) 
+      setCurrentIndex(startIndex);
+    return grpInfo;
+  }
+
+  async function playAudio1Group() {
+    let started = new Date();
+    startTime = getCurrentTime();
+    const grpInfo = selectGroup(selectedGroup, false); // groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup);
+    const startIndex = grpInfo?.Index as number;
+    const count = grpInfo?.Count as number;
+    let index = currentIndex;
+    const startNo = contents[index].No;
+    g_sLevel = selectedLevel;
+    setCurrentCount(count_=>count);
+    setProgressTxt(progressTxt=>"Start!");
+    playOn();
+    setStopButtonName("Stop");
+
+    let cnt = 0;
+    let endNo = startNo;
+    while(index < (startIndex + count)) {
+      if (startNo !== contents[index].No) {
+        endNo = contents[index].No;
+        //setProgressTxt(progressTxt=>startNo + " ~ " + contents[index].No);
+      }
+      setProgress((index - startIndex)/count);
+      setBuffer((index - startIndex)/count);
+      setProgressTxt(progressTxt=> `${index+1}/${count}`);
+      await playAudio1Line (contents[index]);
+      if (!g_bPlay) //isPlaying
+        break;
+      setCurrentIndex(index=>index+1);
+      index++;
+      cnt++;
+    };
+    if (!g_bPlay) //isPlaying
+    {
+      setProgressTxt(progressTxt=>"Stopped!");  
+    } else {
+      setProgressTxt(progressTxt=>"Done!");
+      setCurrentIndex(0);
+    }
+    setStopButtonName("Close");
+
+    let endTime = getCurrentTime();
+    let elapsedTime = endTime - startTime;
+    
+    let text = `No ${startNo} ~ ${endNo} / Count ${cnt} / Started ${formatedTime(started)} / Elapsed ${formatElapsedTime(elapsedTime/1000)} `;
+    await saveData(startTime.toString(), text);
+    loadDataAll();
+    setEndedResult(endedResult=>text);
+    console.log(text);
+    playOff();
+  };
+
+  const playAudio = (fileName: string | null) => {
+    if (audioPlayer) {
+      audioPlayer.pause();
+    }
+
+    const newAudioPlayer = new Audio(`/audio/${fileName}.mp3`);
+    newAudioPlayer.play();
+    setAudioPlayer(newAudioPlayer);
+    return newAudioPlayer;
+  };
+
+  const defaultWaitTime = 2000;
   const playAudioAndWait = (fileName: string | null, waitRate: number, sentenceOrder: string) => {
     return new Promise<void>((resolve) => {
        setPlayState(prevState=>sentenceOrder);
       let audio = playAudio(fileName);
       if (audio) {
         audio.onended = function () {
-          let waitTime = 2000;
+          let waitTime = defaultWaitTime;
           if (audio.duration && waitRate) {
             waitTime = audio.duration * waitRate * 1000;
           }
-          if (selectedLevel == 'High') {
-            waitTime *= inputValue.High;
-          } else if (selectedLevel == 'Mid') {
-            waitTime *= inputValue.Mid;
-          } else if (selectedLevel == 'Low') {
-            waitTime *= inputValue.Low;
+          console.log(`duration:${audio.duration} x waitRate:${waitRate} = waitTime:${waitTime}`);
+          if (g_sLevel == '1') {
+            waitTime *= inputValue[1];
+            console.log(`x ${inputValue[1]} = new waitTime:${waitTime}`);
+          } else if (g_sLevel == '2') {
+            waitTime *= inputValue[2];
+            console.log(`x ${inputValue[2]} = new waitTime:${waitTime}`);
+          } else if (g_sLevel == '3') {
+            waitTime *= inputValue[3];
+            console.log(`x ${inputValue[3]} = new waitTime:${waitTime}`);
           }
-          console.log("waitTime:" + waitTime);
           clearTimer();
           if (!g_bPlay) return; 
           setPlayState(prevState=>sentenceOrder + '>');
@@ -251,14 +319,6 @@ const Tab0: React.FC = () => {
     }
   };
 
-  function selectGroup(selectedGroup_ : string, bFirst : boolean) {
-    setSelectedGroup(selectedGroup_);
-    const grpInfo = groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup_);
-    const startIndex = grpInfo?.Index as number;
-    if (bFirst) 
-      setCurrentIndex(startIndex);
-    return grpInfo;
-  }
   function playOn () {
     setIsPlaying(true);
     g_bPlay = true;
@@ -314,55 +374,6 @@ const Tab0: React.FC = () => {
                     ('0' + currentTime.getMinutes()).slice(-2) + ':' + 
                     ('0' + currentTime.getSeconds()).slice(-2);
   }
-
-  async function playAudio1Group() {
-    let started = new Date();
-    startTime = getCurrentTime();
-    const grpInfo = selectGroup(selectedGroup, false); // groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup);
-    const startIndex = grpInfo?.Index as number;
-    const count = grpInfo?.Count as number;
-    let index = currentIndex;
-    const startNo = contents[index].No;
-    setCurrentCount(count_=>count);
-    setProgressTxt(progressTxt=>"Start!");
-    playOn();
-    setStopButtonName("Stop");
-
-    let cnt = 0;
-    let endNo = startNo;
-    while(index < (startIndex + count)) {
-      if (startNo !== contents[index].No) {
-        endNo = contents[index].No;
-        //setProgressTxt(progressTxt=>startNo + " ~ " + contents[index].No);
-      }
-      setProgress((index - startIndex)/count);
-      setBuffer((index - startIndex)/count);
-      setProgressTxt(progressTxt=> `${index+1}/${count}`);
-      await playAudio1Line (contents[index]);
-      if (!g_bPlay) //isPlaying
-        break;
-      setCurrentIndex(index=>index+1);
-      index++;
-      cnt++;
-    };
-    if (!g_bPlay) //isPlaying
-    {
-      setProgressTxt(progressTxt=>"Stopped!");  
-    } else {
-      setProgressTxt(progressTxt=>"Done!");
-    }
-    setStopButtonName("Close");
-
-    let endTime = getCurrentTime();
-    let elapsedTime = endTime - startTime;
-    
-    let text = `No ${startNo} ~ ${endNo} / Count ${cnt} / Started ${formatedTime(started)} / Elapsed ${formatElapsedTime(elapsedTime/1000)} `;
-    await saveData(startTime.toString(), text);
-    loadDataAll();
-    setEndedResult(endedResult=>text);
-    console.log(text);
-    playOff();
-  };
 
   const fetchData = async () => {
     const xmlFilePath = '/180Sentences.xml'; // XML 파일 경로를 수정하세요
@@ -485,6 +496,12 @@ const loadDataAll = async () => {
     setIsDescChecked(event.detail.checked);
   }
 
+  const handleIntervalChange= (event: CustomEvent) => {
+    const val = event.detail.value;
+     setSelectedLevel(lvl=>val);
+     g_sLevel = val;
+  };
+
   const handleDirectChange= (event: CustomEvent) => {
     const val = event.detail.value;
     setSelectedDirect(val);
@@ -516,48 +533,63 @@ const loadDataAll = async () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <table>
-            <tr>
-            <td>
-              {!isPlaying?(
-          <IonButton onClick={()=>{openModal();}}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
-          ):<IonButton onClick={()=>{setCanDismiss(false);playStop()}}>{stopButtonName}</IonButton>}
+      <IonModal  className="modal-small" isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Paused</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          <p>Paused</p>
+          <p>Elapsed Time: {currentPauseTime}</p>
+          <IonButton onClick={() => {setShowModal(false);g_bPause=false;}}>Close</IonButton>
+        </IonContent>
+      </IonModal>
+      <IonModal className="modal-big" ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} >
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>
+            <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <div>
+              {isPlaying &&(
+                <>
+              <TextComponents text='A' playState={playState} />
+              <TextComponents text='B' playState={playState} />
+              <IonText style={{ marginLeft: '10px' }} className="primary-background white-text border-round font-size-small">{progressTxt}</IonText>
+              <IonProgressBar value={(currentIndex+1)/currentCount} color="primary" style={{ marginLeft: '10px', width: '100px' }}></IonProgressBar>
+              </>
+              )}
+              </div>
+              <div>
+            180 Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> 
+            </div>
+            </div>
+            </IonTitle>
 
-        <IonModal  className="modal-small" isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Paused</IonTitle>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent className="ion-padding">
-            <p>Paused</p>
-            <p>Elapsed Time: {currentPauseTime}</p>
-            <IonButton onClick={() => {setShowModal(false);g_bPause=false;}}>Close</IonButton>
-          </IonContent>
-        </IonModal>
-
-          <IonModal className="modal-big" ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} >
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>180 Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> 
-                {isPlaying &&(
-                  <>
-                <TextComponents text='A' playState={playState} />
-                <TextComponents text='B' playState={playState} />
-                <IonText style={{ marginLeft: '10px' }} className="primary-background white-text border-round font-size-small">{progressTxt}</IonText>
-                <IonProgressBar value={(currentIndex+1)/currentCount} color="primary" style={{ marginLeft: '10px', width: '100px' }}></IonProgressBar>
-                </>
-                )}
-              </IonTitle>
-
-              <IonButtons slot="end">
-              {!isPlaying?<IonButton onClick={() =>{dismiss()}}>Close</IonButton>:""}
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
+            <IonButtons slot="end" style={{ overflow: 'auto' }}>
+                <IonText>Lvl<IonBadge color="primary">{selectedLevel==='1'?'High':selectedLevel==='2'?'Mid':'Low'} </IonBadge></IonText> 
+                <IonText>
+              (x{selectedLevel==='1'?inputValue[1]:selectedLevel==='2'?inputValue[2]:inputValue[3]}) </IonText>
+            {!isPlaying
+              ? <IonButton onClick={() =>{dismiss()}}>Close</IonButton>
+              : ""
+              // <>
+              // <IonButton id="click-trigger2"><IonIcon icon={menuOutline}/></IonButton>
+              //   <IonPopover trigger="click-trigger2" triggerAction="click">
+              //     <IonContent class="ion-padding">
+              //       <IonText>{selectedLevel}</IonText>
+              //     <IonRange labelPlacement="start" label="Interval" ticks={true} snaps={true} min={1} max={3} step={1} value={parseInt(selectedLevel)}  onIonChange={handleIntervalChange}>
+              //     <IonIcon slot="start" icon={flash}></IonIcon>
+              //     <IonIcon slot="end" icon={time}></IonIcon>
+              //     </IonRange>
+              //     </IonContent>
+              //   </IonPopover>
+              //   </>
+                  }
+                </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
           <IonCard style={{ minHeight:'16em'}}>
           <IonCardHeader>
             <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -567,22 +599,20 @@ const loadDataAll = async () => {
               <div style={{ display: 'flex', alignItems: 'center' }}>
               <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
                 <IonIcon icon={stopCircleOutline} slot="start" />
-                Stop
+                <span className='hide-on-small'>Stop</span>
               </IonButton>
               <IonButton onClick={() => { playPause(); }}>
                 <IonIcon icon={pauseCircleOutline} slot="start" />
-                Pause
+                <span className='hide-on-small'>Pause</span>
               </IonButton>
               </div>
              )}
-            
-
             </IonCardTitle>
             {(isPlaying || isShowLine)?(
-              <div>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 35 ? 'size-small' : currentField0.length >= 22 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 35 ? 'size-small' : currentField0.length >= 22 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
-            </div>
+             <div>
+            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
+            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
+             </div>
             ):
             <IonList>
             {[...record].reverse().map((item, index) => (
@@ -600,38 +630,46 @@ const loadDataAll = async () => {
             </IonList>
           }
           </IonCardHeader>
-          <IonCardContent className="ion-text-wrap"></IonCardContent>
+        <IonCardContent className="ion-text-wrap"></IonCardContent>
         </IonCard>
-          </IonContent>
-        </IonModal>
-            </td>
-            <td>
-              <IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
+        </IonContent>
+      </IonModal>
+
+      <IonHeader>
+        <IonToolbar>
+        <div style={{ display: 'flex', flexDirection: 'row' }}>
+          <div>
+            {!isPlaying?(
+          <IonButton onClick={()=>{openModal();}}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
+          ):<IonButton onClick={()=>{setCanDismiss(false);playStop()}}>{stopButtonName}</IonButton>}
+          </div>
+          <div>
+            <IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroup}  interface="popover" onIonChange={handleSelectChange}>
               {groupInfoList.map(group => (
                 <IonSelectOption key={group.Group} value={group.Group}>
                   {group.Group !== null ? dictGroup[group.Group] : "No Group"}
                 </IonSelectOption>
               ))}
             </IonSelect>
-            </td>
-          
-          </tr></table>
+            </div>
+          </div>
           <IonButtons slot="end">
           <IonButton id="click-trigger">
             <IonIcon icon={menuOutline}/>
             </IonButton>
           </IonButtons>
-          {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
+          {/* {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
           {isPlaying?(
           <IonCard style={{ minHeight:'16em'}}>
-          <IonCardHeader>
-            <IonCardTitle>{currentContent?.No} </IonCardTitle>
-            <IonCardSubtitle className="ion-text-wrap">{currentField0}</IonCardSubtitle>
-            <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
-          </IonCardHeader>
-          <IonCardContent className="ion-text-wrap">{currentDesc}</IonCardContent>
-        </IonCard>
-):<div>{endedResult}</div>}
+            <IonCardHeader>
+              <IonCardTitle>{currentContent?.No} </IonCardTitle>
+              <IonCardSubtitle className="ion-text-wrap">{currentField0}</IonCardSubtitle>
+              <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
+            </IonCardHeader>
+            <IonCardContent className="ion-text-wrap">{currentDesc}</IonCardContent>
+          </IonCard>
+          ): */}
+          {!isPlaying && (<div>{endedResult}</div>) }
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -701,23 +739,23 @@ const loadDataAll = async () => {
                 <IonLabel>Interval </IonLabel>
                 <IonButtons>
                   <IonButton
-                    onClick={() => selectLevel('High')}
-                    fill={selectedLevel === 'High' ? 'solid' : 'outline'}
-                    color={selectedLevel === 'High' ? 'primary' : 'default'}
+                    onClick={() => selectLevel('1')}
+                    fill={selectedLevel === '1' ? 'solid' : 'outline'}
+                    color={selectedLevel === '1' ? 'primary' : 'default'}
                   >
                     High
                   </IonButton>
                   <IonButton
-                    onClick={() => selectLevel('Mid')}
-                    fill={selectedLevel === 'Mid' ? 'solid' : 'outline'}
-                    color={selectedLevel === 'Mid' ? 'primary' : 'default'}
+                    onClick={() => selectLevel('2')}
+                    fill={selectedLevel === '2' ? 'solid' : 'outline'}
+                    color={selectedLevel === '2' ? 'primary' : 'default'}
                   >
-                    Middle
+                    Mid
                   </IonButton>
                   <IonButton
-                    onClick={() => selectLevel('Low')}
-                    fill={selectedLevel === 'Low' ? 'solid' : 'outline'}
-                    color={selectedLevel === 'Low' ? 'primary' : 'default'}
+                    onClick={() => selectLevel('3')}
+                    fill={selectedLevel === '3' ? 'solid' : 'outline'}
+                    color={selectedLevel === '3' ? 'primary' : 'default'}
                   >
                     Low
                   </IonButton>
@@ -727,12 +765,12 @@ const loadDataAll = async () => {
               <IonItem>
                 <IonLabel></IonLabel>
                 <IonButtons>
-                  <IonInput type="number" fill="outline" labelPlacement="floating" label="H" value={inputValue.High} className="fixed-size-input"
-                    onIonChange={e => setInputValue({ ...inputValue, High: parseFloat(e.detail.value!) })}></IonInput>
-                  <IonInput type="number" fill="outline" labelPlacement="floating" label="M" value={inputValue.Mid} className="fixed-size-input"
-                    onIonChange={e => setInputValue({ ...inputValue, Mid: parseFloat(e.detail.value!) })}></IonInput>
-                  <IonInput type="number" fill="outline" labelPlacement="floating" label="L" value={inputValue.Low} className="fixed-size-input"
-                    onIonChange={e => setInputValue({ ...inputValue, Low: parseFloat(e.detail.value!) })}></IonInput>
+                  <IonInput type="number" fill="outline" labelPlacement="floating" label="H" value={inputValue[1]} className="fixed-size-input"
+                    onIonChange={e => setInputValue({ ...inputValue, 1: parseFloat(e.detail.value!) })}></IonInput>
+                  <IonInput type="number" fill="outline" labelPlacement="floating" label="M" value={inputValue[2]} className="fixed-size-input"
+                    onIonChange={e => setInputValue({ ...inputValue, 2: parseFloat(e.detail.value!) })}></IonInput>
+                  <IonInput type="number" fill="outline" labelPlacement="floating" label="L" value={inputValue[3]} className="fixed-size-input"
+                    onIonChange={e => setInputValue({ ...inputValue, 3: parseFloat(e.detail.value!) })}></IonInput>
                 </IonButtons>
               </IonItem>
               <IonItem>
