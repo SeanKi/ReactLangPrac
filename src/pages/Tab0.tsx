@@ -8,6 +8,11 @@ import { stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/ico
 import './Tab0.css';
 
 // const orientation = useOrientation(); // it doesn't work.
+const readDictGroupFromFile = async (filename: string): Promise<DictGroup> => {
+  const response = await fetch(filename);
+  const fileContent = await response.text();
+  return JSON.parse(fileContent);
+}
 
 type ContentType = {
   No: string | null;
@@ -80,12 +85,23 @@ const Tab0: React.FC = () => {
     innerHeight:'30px'
   };
   
-  const dictGroup: DictGroup = {
-    "12": "문법Part1",
-    "13": "문법Part2",
-    "8": "8 50잉글리시 0~49",
-    "9": "9 50잉글리시 50~99",
-  };
+  let dictGroup: DictGroup = {};
+  // // Async function to use await
+  // const loadDictGroup = async () => {
+  //   dictGroup = await readDictGroupFromFile('/group180.json');
+  //   // Use dictGroup here
+  // }
+  dictGroup = {
+      "12": "문법Part1",
+      "13": "문법Part2",
+      "8": "8 50잉글리시 0~49",
+      "9": "9 50잉글리시 50~99",
+      "1": "1 문장의5형식",
+      "10": "10 짧은표현 200"
+    };
+  // Call the async function
+ 
+ 
   const [groupInfoList, setGroupInfoList] = useState<GroupInfo[]>([
         // ... Add more group info as needed
   ]);
@@ -99,7 +115,12 @@ const Tab0: React.FC = () => {
   const [endedResult, setEndedResult] = useState("");
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentCount, setCurrentCount] = useState(0);
+  const [currentGrpCount, setCurrentGrpCount] = useState(0);
+  const [currentGrpStartIndex, setCurrentGrpStartIndex] = useState<number>(0);
+
+  //const [startTime, setStartTime] = useState<Date | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
+
 
   const [contents, setContents] = useState<ContentType[]>([]);
   const [currentContent, setCurrentContent] = useState<ContentType>();
@@ -135,13 +156,16 @@ const Tab0: React.FC = () => {
 
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
-  
-  let timeID:number = -1;
+  type TimerID = { value: number };
 
-    const clearTimer = () => {
-    if (timeID > -1) 
-      window.clearInterval(timeID);
-    timeID = -1;
+  let timerID1:TimerID = {value: -1}; //number = -1;
+  let timerID2:TimerID = {value: -1};
+  let timerId2 = -1;
+
+  const clearTimer = (tID: TimerID) => {
+    if (tID.value > -1) 
+      window.clearInterval(tID.value);
+    tID.value = -1;
     // console.log("clearTimer bPlay:" + bPlay);
   }
 
@@ -180,21 +204,22 @@ const Tab0: React.FC = () => {
     setSelectedGroup(selectedGroup_);
     const grpInfo = groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup_);
     const startIndex = grpInfo?.Index as number;
+    setCurrentGrpStartIndex(startIndex);
     if (bFirst) 
-      setCurrentIndex(startIndex);
+      setCurrentIndex(val=>startIndex);
     return grpInfo;
   }
 
   async function playAudio1Group() {
     let started = new Date();
-    startTime = getCurrentTime();
+    // startTime = getCurrentTime();
     const grpInfo = selectGroup(selectedGroup, false); // groupInfoList.find(groupInfo => groupInfo.Group === selectedGroup);
     const startIndex = grpInfo?.Index as number;
     const count = grpInfo?.Count as number;
     let index = currentIndex;
     const startNo = contents[index].No;
     g_sLevel = selectedLevel;
-    setCurrentCount(count_=>count);
+    setCurrentGrpCount(count_=>count);
     setProgressTxt(progressTxt=>"Start!");
     playOn();
     setStopButtonName("Stop");
@@ -208,7 +233,7 @@ const Tab0: React.FC = () => {
       }
       setProgress((index - startIndex)/count);
       setBuffer((index - startIndex)/count);
-      setProgressTxt(progressTxt=> `${index+1}/${count}`);
+      setProgressTxt(progressTxt=> `${(index - startIndex)+1}/${count}`);
       await playAudio1Line (contents[index]);
       if (!g_bPlay) //isPlaying
         break;
@@ -221,19 +246,23 @@ const Tab0: React.FC = () => {
       setProgressTxt(progressTxt=>"Stopped!");  
     } else {
       setProgressTxt(progressTxt=>"Done!");
-      setCurrentIndex(0);
+      setCurrentIndex(startIndex);
     }
     setStopButtonName("Close");
 
     let endTime = getCurrentTime();
     let elapsedTime = endTime - startTime;
     
-    let text = `No ${startNo} ~ ${endNo} / Count ${cnt} / Started ${formatedTime(started)} / Elapsed ${formatElapsedTime(elapsedTime/1000)} `;
-    await saveData(startTime.toString(), text);
+    let text = `No ${startNo} ~ ${endNo} / Count ${cnt} / Started ${formatedTime(started)} / Elapsed ${formatElapsedTime(elapsedTime/1000)} `; //formatElapsedTime(elapsedTime/1000)
+    await saveData(startTime ? startTime.toString() : '', text);
     loadDataAll();
     setEndedResult(endedResult=>text);
     console.log(text);
     playOff();
+    if (timerId2 > -1) {
+      window.clearInterval(timerId2);
+      timerId2 = -1;
+    }
   };
 
   const playAudio = (fileName: string | null) => {
@@ -269,12 +298,12 @@ const Tab0: React.FC = () => {
             waitTime *= inputValue[3];
             console.log(`x ${inputValue[3]} = new waitTime:${waitTime}`);
           }
-          clearTimer();
+          clearTimer(timerID1);
           if (!g_bPlay) return; 
           setPlayState(prevState=>sentenceOrder + '>');
-          timeID =  window.setInterval(() => {
+          timerID1.value =  window.setInterval(() => {
             if (g_bPause) return; //
-            clearTimer();
+            clearTimer(timerID1);
             resolve();
           }, waitTime);
         };
@@ -339,7 +368,7 @@ const Tab0: React.FC = () => {
     } else {
       console.log("playStop audioPlayer is null");
     }
-    clearTimer();
+    clearTimer(timerID1);
     setProgressTxt(progressTxt=>"");
     playOff();
   }
@@ -347,6 +376,10 @@ const Tab0: React.FC = () => {
   const playPause =() => {
     if (g_bPlay && !g_bPause) {
       g_bPause = true;
+          if (timerId2 > -1) {
+      window.clearInterval(timerId2);
+      timerId2 = -1;
+    }
       // alert("Paused");
       // g_bPause = false;
       handleOpenModal();
@@ -376,7 +409,7 @@ const Tab0: React.FC = () => {
   }
 
   const fetchData = async () => {
-    const xmlFilePath = '/180Sentences.xml'; // XML 파일 경로를 수정하세요
+    const xmlFilePath = '/180Sentences+.xml'; // XML 파일 경로를 수정하세요
     
     try {
       const response = await fetch(xmlFilePath);
@@ -420,6 +453,7 @@ const Tab0: React.FC = () => {
             groupInfoList.push(grpInfo);
           }
         }
+        selectGroup(selectedGroup, true);
       }
       setContents(contentArray);
     } catch (error) {
@@ -458,6 +492,7 @@ const loadDataAll = async () => {
   }
 
  useEffect( () => {
+    // loadDictGroup();
     fetchData();
     createStorage();
     let interval:any = null;
@@ -511,15 +546,31 @@ const loadDataAll = async () => {
 
   const [canDismiss, setCanDismiss] = useState(true);
   const [presentingElement, setPresentingElement] = useState<HTMLElement | undefined>(undefined);
+
   function dismiss() {
     modal.current?.dismiss();
     setIsShowLine(false);
   }
-  // function didPresent() {
-  //     console.log("didPresent");
-  //     playAudio1Group();
-  // }
-  const openModal = (index: number = -1) => {
+
+  function clearTimerId2() {
+    if (timerId2 > -1) {
+      window.clearInterval(timerId2);
+      timerId2 = -1;
+    }
+  }
+   const openModal = (index: number = -1) => {
+    startTime = new Date().getTime(); // setStartTime(time_ => new Date());
+    clearTimerId2();
+    timerId2 = timerID2.value = window.setInterval(() => {
+      if (startTime) {
+        const now = new Date();
+        const elapsedSeconds = Math.floor((now.getTime() - startTime) / 1000);
+        setElapsedTime(formatElapsedTime(elapsedSeconds));
+      }
+      if (!g_bPlay)
+        clearTimerId2();
+    }, 1000);
+
     if (index == -1) {  // it means play all
       setCanDismiss(true);
       playAudio1Group();
@@ -529,6 +580,7 @@ const loadDataAll = async () => {
       setCanDismiss(true);
     }
     modal.current?.present(); // modalRef를 사용하여 IonModal을 열기
+
   };
 
   return (
@@ -556,58 +608,48 @@ const loadDataAll = async () => {
               <TextComponents text='A' playState={playState} />
               <TextComponents text='B' playState={playState} />
               <IonText style={{ marginLeft: '10px' }} className="primary-background white-text border-round font-size-small">{progressTxt}</IonText>
-              <IonProgressBar value={(currentIndex+1)/currentCount} color="primary" style={{ marginLeft: '10px', width: '100px' }}></IonProgressBar>
+              <IonProgressBar value={(currentIndex - currentGrpStartIndex +1)/currentGrpCount} color="primary" style={{ marginLeft: '5px',  width: '2.5em' }}></IonProgressBar>
               </>
               )}
               </div>
               <div>
-            180 Sentences <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> 
-            </div>
+                <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> 180 Sentences {isPlaying && (<IonText>[{elapsedTime}]</IonText>)}
+              </div>
             </div>
             </IonTitle>
 
             <IonButtons slot="end" style={{ overflow: 'auto' }}>
                 <IonText>Lvl<IonBadge color="primary">{selectedLevel==='1'?'High':selectedLevel==='2'?'Mid':'Low'} </IonBadge></IonText> 
                 <IonText>
-              (x{selectedLevel==='1'?inputValue[1]:selectedLevel==='2'?inputValue[2]:inputValue[3]}) </IonText>
-            {!isPlaying
-              ? <IonButton onClick={() =>{dismiss()}}>Close</IonButton>
-              : ""
-              // <>
-              // <IonButton id="click-trigger2"><IonIcon icon={menuOutline}/></IonButton>
-              //   <IonPopover trigger="click-trigger2" triggerAction="click">
-              //     <IonContent class="ion-padding">
-              //       <IonText>{selectedLevel}</IonText>
-              //     <IonRange labelPlacement="start" label="Interval" ticks={true} snaps={true} min={1} max={3} step={1} value={parseInt(selectedLevel)}  onIonChange={handleIntervalChange}>
-              //     <IonIcon slot="start" icon={flash}></IonIcon>
-              //     <IonIcon slot="end" icon={time}></IonIcon>
-              //     </IonRange>
-              //     </IonContent>
-              //   </IonPopover>
-              //   </>
-                  }
+                  (x{selectedLevel==='1'?inputValue[1]:selectedLevel==='2'?inputValue[2]:inputValue[3]}) </IonText>
+                {!isPlaying && (
+                <IonButton fill="outline" onClick={() =>{dismiss()}}>Close</IonButton>
+                )
+                }
                 </IonButtons>
           </IonToolbar>
         </IonHeader>
         <IonContent>
           <IonCard style={{ minHeight:'16em'}}>
           <IonCardHeader>
-            <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
               <IonChip outline={true}>{currentContent?.No}</IonChip>
-              {isPlaying &&(<IonText>{currentHint}</IonText>)}
-             {isPlaying &&(
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-              <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
+              {isPlaying && (<IonText>{currentHint}</IonText>)}
+            </div>
+            {isPlaying && (
+            <IonButtons>
+                <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
                 <IonIcon icon={stopCircleOutline} slot="start" />
                 <span className='hide-on-small'>Stop</span>
               </IonButton>
-              <IonButton onClick={() => { playPause(); }}>
+              <IonButton fill="outline" onClick={() => { playPause(); }}>
                 <IonIcon icon={pauseCircleOutline} slot="start" />
                 <span className='hide-on-small'>Pause</span>
               </IonButton>
-              </div>
-             )}
-            </IonCardTitle>
+            </IonButtons>
+            )}
+          </IonCardTitle>
             {(isPlaying || isShowLine)?(
              <div>
             <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
@@ -630,7 +672,7 @@ const loadDataAll = async () => {
             </IonList>
           }
           </IonCardHeader>
-        <IonCardContent className="ion-text-wrap"></IonCardContent>
+        <IonCardContent className="ion-text-wrap">{!isPlaying?currentDesc:''}</IonCardContent>
         </IonCard>
         </IonContent>
       </IonModal>
@@ -794,7 +836,12 @@ const loadDataAll = async () => {
             content.Group == selectedGroup && (
             <IonItem key={content.No}>
               <IonAvatar slot="start" className="avatarStyle">
-                <table><tr><td><IonChip outline={true} onClick={()=>{show1Line(content);openModal(index);}}>{content.No}</IonChip></td></tr><tr><td><IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}><IonIcon icon={caretForwardCircleOutline}/></IonButton></td></tr></table>
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                <IonChip outline={true} onClick={()=>{show1Line(content);openModal(index);}}>{content.No}</IonChip>
+                <IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}>
+                  <IonIcon icon={caretForwardCircleOutline}/>
+                </IonButton>
+              </div>
               </IonAvatar>
               <IonLabel className={currentIndex == index?'highlight':''}>
               {selectedLanguage != 'eng'?(
