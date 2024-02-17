@@ -1,4 +1,4 @@
-import { Redirect, Route, HashRouter as Router } from 'react-router-dom';
+import { Redirect, Route } from 'react-router-dom';
 import {
   IonApp,
   IonIcon,
@@ -11,8 +11,9 @@ import {
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { ellipse, square, triangle } from 'ionicons/icons';
-import Tab1 from './pages/Tab1';
 import Tab0 from './pages/Tab0';
+import Tab1 from './pages/Tab1';
+import Tab2 from './pages/Tab2';
 import Tab3 from './pages/Tab3';
 
 /* Core CSS required for Ionic components to work properly */
@@ -41,28 +42,27 @@ const App: React.FC = () => (
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
-          <Route path="/">
-            <Tab0 />
-          </Route>
           <Route path="/tab1">
             <Tab1 />
+          </Route>
+          <Route path="/tab0">
+            <Tab0 />
           </Route>
           <Route path="/tab3">
             <Tab3 />
           </Route>
-          {/* <Route exact path="/">
-            <Redirect to="/tab0" />
-          </Route> */}
-
+          <Route exact path="/">
+            <Redirect to="/tab1" />
+          </Route>
         </IonRouterOutlet>
         <IonTabBar slot="bottom">
-          <IonTabButton tab="tab0" href="/">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>180 Sen.</IonLabel>
+          <IonTabButton tab="tab0" href="/tab0">
+            <IonIcon aria-hidden="true" icon={ellipse} />
+            <IonLabel>180+ S</IonLabel>
           </IonTabButton>
           <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>400 Sen.</IonLabel>
+            <IonIcon aria-hidden="true" icon={triangle} />
+            <IonLabel>400 S</IonLabel>
           </IonTabButton>
           <IonTabButton tab="tab3" href="/tab3">
             <IonIcon aria-hidden="true" icon={square} />
