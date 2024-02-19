@@ -585,7 +585,7 @@ const loadDataAll = async () => {
 
   return (
     <IonPage>
-      <IonModal  className="modal-small" isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+      <IonModal  className="modal-small" isOpen={showModal} onDidDismiss={() => setShowModal(false)} backdropDismiss={false}>
         <IonHeader>
           <IonToolbar>
             <IonTitle>Paused</IonTitle>
@@ -597,7 +597,7 @@ const loadDataAll = async () => {
           <IonButton onClick={() => {setShowModal(false);g_bPause=false;}}>Close</IonButton>
         </IonContent>
       </IonModal>
-      <IonModal className="modal-big" ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} >
+      <IonModal className="modal-big" ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} backdropDismiss={false} >
         <IonHeader>
           <IonToolbar>
             <IonTitle>
