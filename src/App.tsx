@@ -42,25 +42,25 @@ const App: React.FC = () => (
     <IonReactRouter>
       <IonTabs>
         <IonRouterOutlet>
-          <Route path="/tab1/:id?">
-            <Tab1 />
-          </Route>
-          <Route path="/tab0/:id?">
+          <Route path="/180/:id?">
             <Tab0 />
+          </Route>
+          <Route path="/400/:id?">
+            <Tab1 />
           </Route>
           <Route path="/tab3">
             <Tab3 />
           </Route>
           <Route exact path="/">
-            <Redirect to="/tab0" />
+            <Redirect to="/180" />
           </Route>
         </IonRouterOutlet>
         <IonTabBar slot="bottom">
-          <IonTabButton tab="tab0" href="/tab0">
+          <IonTabButton tab="tab0" href="/180">
             <IonIcon aria-hidden="true" icon={ellipse} />
             <IonLabel>180+ S</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab1" href="/tab1">
+          <IonTabButton tab="tab1" href="/400">
             <IonIcon aria-hidden="true" icon={triangle} />
             <IonLabel>400 S</IonLabel>
           </IonTabButton>
