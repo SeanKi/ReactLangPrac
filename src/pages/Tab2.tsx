@@ -1,25 +1,21 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import ExploreContainer from '../components/ExploreContainer';
-import './Tab2.css';
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import { Storage } from '@ionic/storage';
+import { IonModal, IonChip, IonRange, IonBadge, IonGrid, IonRow, IonCol, IonText, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
+import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
+import { stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/icons';
+import SentenceGrpPractice from '../components/SentenceGrpPractice';
 
+const dictGroup = {
+      "12": "문법Part1",
+      "13": "문법Part2",
+      "8": "8 50잉글리시 0~49",
+      "9": "9 50잉글리시 50~99",
+      "1": "1 문장의5형식",
+      "10": "10 짧은표현 200"
+    };
+ 
 const Tab2: React.FC = () => {
-  return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Tab 2</IonTitle>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Tab 2</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <ExploreContainer name="Tab 2 page" />
-      </IonContent>
-    </IonPage>
-  );
+  return <SentenceGrpPractice DictGroup={dictGroup} FileName="/180Sentences+.xml" InitGroup='12,13,1,10'/>;
 };
-
 export default Tab2;

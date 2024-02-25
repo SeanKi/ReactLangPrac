@@ -4,7 +4,7 @@ import { Storage } from '@ionic/storage';
 import { IonModal, IonChip, IonRange, IonBadge, IonGrid, IonRow, IonCol, IonText, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
 import { stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/icons';
-import SentencePractice from '../components/SentencePractice';
+import SentenceGrpPractice from '../components/SentenceGrpPractice';
 
 const dictGroup = {
     "1": "1 문장의5형식",
@@ -22,6 +22,6 @@ const dictGroup = {
 
 const Tab1: React.FC = () => {
   
-  return <SentencePractice DictGroup={dictGroup} FileName="/400Sentences.xml" InitGroup='1'/>;
+  return <SentenceGrpPractice DictGroup={dictGroup} FileName="/400Sentences.xml" InitGroup='1'/>;
 };
 export default Tab1;

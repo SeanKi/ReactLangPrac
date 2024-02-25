@@ -45,8 +45,8 @@ const App: React.FC = () => (
           <Route path="/180/:id?">
             <Tab0 />
           </Route>
-          <Route path="/400/:id?">
-            <Tab1 />
+          <Route exact path="/all">
+            <Tab2 />
           </Route>
           <Route path="/tab3">
             <Tab3 />
@@ -60,9 +60,9 @@ const App: React.FC = () => (
             <IonIcon aria-hidden="true" icon={ellipse} />
             <IonLabel>180+ S</IonLabel>
           </IonTabButton>
-          <IonTabButton tab="tab1" href="/400">
+          <IonTabButton tab="tab2" href="/all">
             <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>400 S</IonLabel>
+            <IonLabel>180+ A</IonLabel>
           </IonTabButton>
           <IonTabButton tab="tab3" href="/tab3">
             <IonIcon aria-hidden="true" icon={square} />
