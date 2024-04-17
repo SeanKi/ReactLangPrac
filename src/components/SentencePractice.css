@@ -5,6 +5,7 @@
 
 .avatarStyle {
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
 }
 
@@ -35,6 +36,10 @@
     --ion-font-family: 'Comic Sans MS';
   }
   
+  .is-semi-auto-on {
+    color:rgba(220,220,220,0.6);
+    font-size: 3vw;
+  }
   .size-big {
     font-size: 5vw/** 2.5em**/;
   }

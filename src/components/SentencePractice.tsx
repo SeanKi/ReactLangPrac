@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Storage } from '@ionic/storage';
 import { IonModal, IonChip, IonRange, IonBadge, IonGrid, IonRow, IonCol, IonText, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
-import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
-import { stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/icons';
+import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, chevronForwardCircleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
+import { chevronBackOutline, chevronForwardOutline, stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/icons';
 // import { useOrientation } from 'react-use';
 import './SentencePractice.css';
 
@@ -132,6 +132,8 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
   const [isShowLine, setIsShowLine] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [isDescChecked, setIsDescChecked] = useState(true);
+  const [isHintChecked, setIsHintChecked] = useState(true);
+  const [isSemiAutoChecked, setSemiAutoChecked] = useState(true);
   const [selectedDirect, setSelectedDirect] = useState("k2e"); //e2k
 
   const [showLanguagePopover, setShowLanguagePopover] = useState(false);
@@ -356,6 +358,11 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
     console.log('playOff bPlay:' + g_bPlay);
   }
 
+  const showMove =(dir : number)=> {
+    setCurrentIndex(index=>index + dir);
+    show1Line(contents[currentIndex]);
+  }
+
   const playStop =() => {
      if (audioPlayer) {
       audioPlayer.pause();
@@ -526,6 +533,14 @@ const loadDataAll = async () => {
     setIsDescChecked(event.detail.checked);
   }
 
+  const handleHintCheckChange= (event: CustomEvent) => {
+    setIsHintChecked(event.detail.checked);
+  }
+
+  const handleSemiAutoCheckChange= (event: CustomEvent) => {
+    setSemiAutoChecked(event.detail.checked);
+  }
+
   const handleIntervalChange= (event: CustomEvent) => {
     const val = event.detail.value;
      setSelectedLevel(lvl=>val);
@@ -632,6 +647,16 @@ const loadDataAll = async () => {
               <IonChip outline={true}>{currentContent?.No}</IonChip>
               {isPlaying && (<IonText>{currentHint}</IonText>)}
             </div>
+            {!isPlaying && isSemiAutoChecked && (
+              <IonButtons>
+                <IonButton fill="outline" onClick={() => { showMove(-1); }}>
+                  <IonIcon icon={chevronBackOutline} slot="start" />
+                </IonButton>
+                <IonButton fill="outline" onClick={() => { showMove(1);}}>
+                  <IonIcon icon={chevronForwardOutline} slot="start" />
+                </IonButton>
+              </IonButtons>
+          )}
             {isPlaying && (
             <IonButtons>
                 <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
@@ -648,7 +673,7 @@ const loadDataAll = async () => {
             {(isPlaying || isShowLine)?(
              <div>
             <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
+            <IonCardSubtitle className={`ion-text-wrap ${!isPlaying && isSemiAutoChecked ? 'is-semi-auto-on' : (currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big')}`}>{currentField}</IonCardSubtitle>
              </div>
             ):
             <IonList>
@@ -695,17 +720,6 @@ const loadDataAll = async () => {
             <IonIcon icon={menuOutline}/>
             </IonButton>
           </IonButtons>
-          {/* {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
-          {isPlaying?(
-          <IonCard style={{ minHeight:'16em'}}>
-            <IonCardHeader>
-              <IonCardTitle>{currentContent?.No} </IonCardTitle>
-              <IonCardSubtitle className="ion-text-wrap">{currentField0}</IonCardSubtitle>
-              <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
-            </IonCardHeader>
-            <IonCardContent className="ion-text-wrap">{currentDesc}</IonCardContent>
-          </IonCard>
-          ): */}
           {!isPlaying && (<div>{endedResult}</div>) }
         </IonToolbar>
       </IonHeader>
@@ -743,10 +757,15 @@ const loadDataAll = async () => {
 
                     <IonCol size="6">
                       <IonList>
+                      <IonItem>
+                          <IonLabel>Hint</IonLabel>
+                          <IonCheckbox slot="start" checked={isHintChecked} onIonChange={handleHintCheckChange}></IonCheckbox>
+                        </IonItem>
                         <IonItem>
                           <IonLabel>Desc.</IonLabel>
                           <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
                         </IonItem>
+                        
                       </IonList>
                     </IonCol>
                   </IonRow>
@@ -766,6 +785,10 @@ const loadDataAll = async () => {
                     </IonItem>
                   </IonRadioGroup>
                 </IonList>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Semi Auto Mode </IonLabel>
+                <IonCheckbox slot="start" checked={isSemiAutoChecked} onIonChange={handleSemiAutoCheckChange}></IonCheckbox>
               </IonItem>
               <IonItem>
                 <IonLabel>Direction </IonLabel>
@@ -831,7 +854,7 @@ const loadDataAll = async () => {
             content.Group == selectedGroup && (
             <IonItem key={content.No}>
               <IonAvatar slot="start" className="avatarStyle">
-              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start'}}>
                 <IonChip outline={true} onClick={()=>{show1Line(content);openModal(index);}}>{content.No}</IonChip>
                 <IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}>
                   <IonIcon icon={caretForwardCircleOutline}/>
@@ -839,6 +862,9 @@ const loadDataAll = async () => {
               </div>
               </IonAvatar>
               <IonLabel className={currentIndex == index?'highlight':''}>
+              {isHintChecked?(
+                <p className="ion-text-wrap">{content.Hint}</p>
+                ):''}
               {selectedLanguage != 'eng'?(
                 <h2 className="ion-text-wrap" style={{fontStyle:'Nanum Myeongjo'}}><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> 
                 <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton>

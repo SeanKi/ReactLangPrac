@@ -653,306 +653,286 @@ const loadDataAll = async () => {
 
   };
 
+  const popover = useRef<HTMLIonPopoverElement>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const openPopover = (e: any) => {
+    popover.current!.event = e;
+    setPopoverOpen(true);
+  };
+
   return (
     <IonPage>
-      <IonModal  className="modal-small" isOpen={showModal} onDidDismiss={() => setShowModal(false)} backdropDismiss={false}>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Paused</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent className="ion-padding">
-          <p>Paused</p>
-          <p>Elapsed Time: {currentPauseTime}</p>
-          <IonButton onClick={() => {setShowModal(false);g_bPause=false;}}>Close</IonButton>
-        </IonContent>
-      </IonModal>
-      <IonModal className="modal-big" ref={modal}  canDismiss={canDismiss} presentingElement={presentingElement} backdropDismiss={false} >
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <div>
-              {isPlaying &&(
-                <>
-              <TextComponents text='A' playState={playState} />
-              <TextComponents text='B' playState={playState} />
-              <IonText style={{ marginLeft: '10px' }} className="primary-background white-text border-round font-size-small">{progressTxt}</IonText>
-              <IonProgressBar value={(currentIndex - currentGrpStartIndex +1)/currentGrpCount} color="primary" style={{ marginLeft: '5px',  width: '2.5em' }}></IonProgressBar>
-              </>
-              )}
-              </div>
-              <div>
-                <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> 180 Sentences {isPlaying && (<IonText>[{elapsedTime}]</IonText>)}
-              </div>
-            </div>
-            </IonTitle>
-
-            <IonButtons slot="end" style={{ overflow: 'auto' }}>
-                <IonText>Lvl<IonBadge color="primary">{selectedLevel==='1'?'High':selectedLevel==='2'?'Mid':'Low'} </IonBadge></IonText> 
-                <IonText>
-                  (x{selectedLevel==='1'?inputValue[1]:selectedLevel==='2'?inputValue[2]:inputValue[3]}) </IonText>
-                {!isPlaying && (
-                <IonButton fill="outline" onClick={() =>{dismiss()}}>Close</IonButton>
-                )
-                }
-                </IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent>
-          <IonCard style={{ minHeight:'16em'}}>
-          <IonCardHeader>
-          <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <IonChip outline={true}>{currentContent?.No}</IonChip>
-              {isPlaying && (<IonText>{currentHint}</IonText>)}
-            </div>
-            {isPlaying && (
-            <IonButtons>
-                <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
-                <IonIcon icon={stopCircleOutline} slot="start" />
-                <span className='hide-on-small'>Stop</span>
-              </IonButton>
-              <IonButton fill="outline" onClick={() => { playPause(); }}>
-                <IonIcon icon={pauseCircleOutline} slot="start" />
-                <span className='hide-on-small'>Pause</span>
-              </IonButton>
-            </IonButtons>
-            )}
-          </IonCardTitle>
-            {(isPlaying || isShowLine)?(
-             <div>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
-             </div>
-            ):
-            <IonList>
-            {[...record].reverse().map((item, index) => (
-              <IonItem key={index}>
-                <IonLabel style={{
-                  fontSize: index === 0 ? '1.3em' : 'normal',
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
-                  fontWeight:  index === 0 ? 'bold':'normal'
-                }}>
-                  {item.value}
-                </IonLabel>
-              </IonItem>
-            ))}
-            </IonList>
-          }
-          </IonCardHeader>
-        <IonCardContent className="ion-text-wrap">{!isPlaying?currentDesc:''}</IonCardContent>
-        </IonCard>
-        </IonContent>
-      </IonModal>
-
       <IonHeader>
         <IonToolbar>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <div>
-            {!isPlaying?(
-          <IonButton onClick={()=>{openModal();}}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton> 
-          ):<IonButton onClick={()=>{setCanDismiss(false);playStop()}}>{stopButtonName}</IonButton>}
-          </div>
-          <div>
-            <IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em'}} value={selectedGroups}  interface="popover" onIonChange={handleSelectChange} multiple={true}>
-              {groupInfoList.map(group => (
-                <IonSelectOption key={group.Group} value={group.Group}>
-                  {group.Group !== null ? dictGroup[group.Group] : "No Group"}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-             {/* <div>
-              <Select
-                options={groupInfoList.map(group => (
-                  { value: group.Group, label: group.Group !== null ? dictGroup[group.Group] : "No Group" }
+          <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <div>
+              {!isPlaying ? (
+                <IonButton onClick={() => { openModal(); }}><IonIcon icon={playOutline}></IonIcon> <IonIcon icon={listOutline}></IonIcon></IonButton>
+              ) : <IonButton onClick={() => { setCanDismiss(false); playStop() }}>{stopButtonName}</IonButton>}
+            </div>
+            <div>
+              <IonSelect style={{ fontSize: '1.1em', marginLeft: '0.5em' }} value={selectedGroups} interface="popover" onIonChange={handleSelectChange} multiple={true}>
+                {groupInfoList.map(group => (
+                  <IonSelectOption key={group.Group} value={group.Group}>
+                    {group.Group !== null ? dictGroup[group.Group] : "No Group"}
+                  </IonSelectOption>
                 ))}
-                isMulti
-                defaultValue={[selectedGroup] }
-                onChange={(e) => handleSelectChange(e)}
-              />
-             </div> */}
+              </IonSelect>
             </div>
           </div>
           <IonButtons slot="end">
-          <IonButton id="click-trigger">
-            <IonIcon icon={menuOutline}/>
+            <IonButton onClick={openPopover}>
+              <IonIcon icon={menuOutline} />
             </IonButton>
+            <IonPopover ref={popover} isOpen={popoverOpen} onDidDismiss={() => setPopoverOpen(false)}>
+              <IonList>
+                <IonItem>
+                  <IonGrid>
+                    <IonRow>
+                      <IonCol size="6">
+                        <IonList>
+                          <IonRadioGroup value={selectedLanguage} onIonChange={handleLanguageChange}>
+                            <IonItem>
+                              <IonLabel>All</IonLabel>
+                              <IonRadio slot="start" value="all" />
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Kor</IonLabel>
+                              <IonRadio slot="start" value="kor" />
+                            </IonItem>
+                            <IonItem>
+                              <IonLabel>Eng</IonLabel>
+                              <IonRadio slot="start" value="eng" />
+                            </IonItem>
+                          </IonRadioGroup>
+                        </IonList>
+                      </IonCol>
+
+                      <IonCol size="6">
+                        <IonList>
+                          <IonItem>
+                            <IonLabel>Desc.</IonLabel>
+                            <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
+                          </IonItem>
+                        </IonList>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                </IonItem>
+                <IonItem>
+                  <IonList>
+                    <IonRadioGroup value={selectedDirect} onIonChange={handleDirectChange}>
+                      <IonItem>
+                        <IonLabel>Korean to English</IonLabel>
+                        <IonRadio slot="start" value="k2e" />
+                      </IonItem>
+                      <IonItem>
+                        <IonLabel>English to Korean</IonLabel>
+                        <IonRadio slot="start" value="e2k" />
+                      </IonItem>
+                    </IonRadioGroup>
+                  </IonList>
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Direction. </IonLabel>
+                  <IonButton onClick={() => makeOrderList('forward')}><IonIcon icon={arrowForwardOutline}></IonIcon></IonButton>
+                  <IonButton onClick={() => makeOrderList('random')}><IonIcon icon={shuffleOutline}></IonIcon></IonButton>
+                  <IonButton onClick={() => makeOrderList('random', 3)}><IonIcon icon={shuffleOutline}></IonIcon>3</IonButton>
+                  <IonButton onClick={() => makeOrderList('random', 5)}><IonIcon icon={shuffleOutline}></IonIcon>5</IonButton>
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Group Play Count </IonLabel>
+                  <IonInput labelPlacement="floating" label="Count" type="number" fill="outline" value={groupOptions.Count} maxlength={3} style={{ width: '6em' }}
+                    onIonChange={e => setGroupOptions({ ...groupOptions, Count: parseInt(e.detail.value!) })}></IonInput>
+                </IonItem>
+                <IonItem>
+                  <IonLabel>Interval </IonLabel>
+                  <IonButtons>
+                    <IonButton
+                      onClick={() => selectLevel('1')}
+                      fill={selectedLevel === '1' ? 'solid' : 'outline'}
+                      color={selectedLevel === '1' ? 'primary' : 'default'}
+                    >
+                      High
+                    </IonButton>
+                    <IonButton
+                      onClick={() => selectLevel('2')}
+                      fill={selectedLevel === '2' ? 'solid' : 'outline'}
+                      color={selectedLevel === '2' ? 'primary' : 'default'}
+                    >
+                      Mid
+                    </IonButton>
+                    <IonButton
+                      onClick={() => selectLevel('3')}
+                      fill={selectedLevel === '3' ? 'solid' : 'outline'}
+                      color={selectedLevel === '3' ? 'primary' : 'default'}
+                    >
+                      Low
+                    </IonButton>
+                  </IonButtons>
+                </IonItem>
+                <IonItem>
+                  <IonLabel></IonLabel>
+                  <IonButtons>
+                    <IonInput type="number" fill="outline" labelPlacement="floating" label="H" value={inputValue[1]} className="fixed-size-input"
+                      onIonChange={e => setInputValue({ ...inputValue, 1: parseFloat(e.detail.value!) })}></IonInput>
+                    <IonInput type="number" fill="outline" labelPlacement="floating" label="M" value={inputValue[2]} className="fixed-size-input"
+                      onIonChange={e => setInputValue({ ...inputValue, 2: parseFloat(e.detail.value!) })}></IonInput>
+                    <IonInput type="number" fill="outline" labelPlacement="floating" label="L" value={inputValue[3]} className="fixed-size-input"
+                      onIonChange={e => setInputValue({ ...inputValue, 3: parseFloat(e.detail.value!) })}></IonInput>
+                  </IonButtons>
+                </IonItem>
+                <IonItem>
+                  <IonLabel></IonLabel>
+                  <IonButtons>
+                    <IonInput labelPlacement="floating" label="Lang" type="number" fill="outline" value={inputInterVal.Lang} maxlength={3} style={{ width: '6em' }}
+                      onIonChange={e => setInputInterVal({ ...inputInterVal, Lang: parseFloat(e.detail.value!) })}></IonInput>
+                    <IonInput labelPlacement="floating" label="Sentence" type="number" fill="outline" value={inputInterVal.Sent} maxlength={3} style={{ width: '6em' }}
+                      onIonChange={e => setInputInterVal({ ...inputInterVal, Sent: parseFloat(e.detail.value!) })}></IonInput>
+                  </IonButtons>
+                </IonItem>
+              </IonList>
+            </IonPopover>
           </IonButtons>
-          {/* {isPlaying?(<IonProgressBar buffer={buffer} value={progress} hidden={true}></IonProgressBar>):""}
-          {isPlaying?(
-          <IonCard style={{ minHeight:'16em'}}>
-            <IonCardHeader>
-              <IonCardTitle>{currentContent?.No} </IonCardTitle>
-              <IonCardSubtitle className="ion-text-wrap">{currentField0}</IonCardSubtitle>
-              <IonCardSubtitle className="ion-text-wrap">{currentField}</IonCardSubtitle>
-            </IonCardHeader>
-            <IonCardContent className="ion-text-wrap">{currentDesc}</IonCardContent>
-          </IonCard>
-          ): */}
-          {!isPlaying && (<div>{endedResult}</div>) }
+          {!isPlaying && (<div>{endedResult}</div>)}
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         <IonHeader collapse="condense">
-        <IonToolbar>
+          <IonToolbar>
             <IonTitle size="large">Sentence</IonTitle>
           </IonToolbar>
         </IonHeader>
-        
         <IonGrid>
-        <IonPopover trigger="click-trigger" triggerAction="click">
-            <IonList>
-              <IonItem>
-                <IonGrid>
-                  <IonRow>
-                    <IonCol size="6">
-                      <IonList>
-                        <IonRadioGroup value={selectedLanguage} onIonChange={handleLanguageChange}>
-                          <IonItem>
-                            <IonLabel>All</IonLabel>
-                            <IonRadio slot="start" value="all" />
-                          </IonItem>
-                          <IonItem>
-                            <IonLabel>Kor</IonLabel>
-                            <IonRadio slot="start" value="kor" />
-                          </IonItem>
-                          <IonItem>
-                            <IonLabel>Eng</IonLabel>
-                            <IonRadio slot="start" value="eng" />
-                          </IonItem>
-                        </IonRadioGroup>
-                      </IonList>
-                    </IonCol>
-
-                    <IonCol size="6">
-                      <IonList>
-                        <IonItem>
-                          <IonLabel>Desc.</IonLabel>
-                          <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
-                        </IonItem>
-                      </IonList>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </IonItem>
-
-              <IonItem>
-                <IonList>
-                  <IonRadioGroup value={selectedDirect} onIonChange={handleDirectChange}>
-                    <IonItem>
-                      <IonLabel>Korean to English</IonLabel>
-                      <IonRadio slot="start" value="k2e" />
+          <IonRow>
+            <IonCol>
+              <IonList>
+                <IonListHeader> <h1>Sentence practice - Group</h1></IonListHeader>
+                <p style={{ marginLeft: '0.5em' }}>{selectedGroups.length > 1 ? '' : dictGroup[selectedGroup]}</p>
+                {contents.map((content, index) => (
+                  selectedGroups.includes(content.Group ?? '') && (
+                    <IonItem key={content.No}>
+                      <IonAvatar slot="start" className="avatarStyle">
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <IonChip outline={true} onClick={() => { show1Line(content); openModal(index); }}>{content.No}</IonChip>
+                          <IonButton onClick={async () => { setCurrentIndex(index); playOn(); await playAudio1Line(content); playOff(); }}>
+                            <IonIcon icon={caretForwardCircleOutline} />
+                          </IonButton>
+                        </div>
+                      </IonAvatar>
+                      <IonLabel className={currentIndex == index ? 'highlight' : ''}>
+                        {selectedLanguage != 'eng' ? (
+                          <h2 className="ion-text-wrap" style={{ fontStyle: 'Nanum Myeongjo' }}><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}>
+                            <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton>
+                            {content.FIELD2}</h2>
+                        ) : ''}
+                        {selectedLanguage != 'kor' ? (
+                          <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}>
+                            <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton>
+                            {content.FIELD1}</h2>
+                        ) : ''}
+                        {isDescChecked ? (
+                          <p className="ion-text-wrap">{content.DESC}</p>
+                        ) : ''}
+                      </IonLabel>
                     </IonItem>
-                    <IonItem>
-                      <IonLabel>English to Korean</IonLabel>
-                      <IonRadio slot="start" value="e2k" />
-                    </IonItem>
-                  </IonRadioGroup>
-                </IonList>
-              </IonItem>
-              <IonItem>
-                <IonLabel>Direction. </IonLabel>
-                <IonButton onClick={() => makeOrderList('forward')}><IonIcon icon={arrowForwardOutline}></IonIcon></IonButton>
-                <IonButton onClick={() => makeOrderList('random')}><IonIcon icon={shuffleOutline}></IonIcon></IonButton>
-                <IonButton onClick={() => makeOrderList('random', 3)}><IonIcon icon={shuffleOutline}></IonIcon>3</IonButton>
-                <IonButton onClick={() => makeOrderList('random', 5)}><IonIcon icon={shuffleOutline}></IonIcon>5</IonButton>
-              </IonItem>
-              <IonItem>
-                <IonLabel>Group Play Count </IonLabel>
-                <IonInput labelPlacement="floating" label="Count" type="number" fill="outline" value={groupOptions.Count} maxlength={3} style={{ width: '6em' }}
-                    onIonChange={e => setGroupOptions({ ...groupOptions, Count: parseInt(e.detail.value!) })}></IonInput>
-              </IonItem>
-              <IonItem>
-                <IonLabel>Interval </IonLabel>
-                <IonButtons>
-                  <IonButton
-                    onClick={() => selectLevel('1')}
-                    fill={selectedLevel === '1' ? 'solid' : 'outline'}
-                    color={selectedLevel === '1' ? 'primary' : 'default'}
-                  >
-                    High
-                  </IonButton>
-                  <IonButton
-                    onClick={() => selectLevel('2')}
-                    fill={selectedLevel === '2' ? 'solid' : 'outline'}
-                    color={selectedLevel === '2' ? 'primary' : 'default'}
-                  >
-                    Mid
-                  </IonButton>
-                  <IonButton
-                    onClick={() => selectLevel('3')}
-                    fill={selectedLevel === '3' ? 'solid' : 'outline'}
-                    color={selectedLevel === '3' ? 'primary' : 'default'}
-                  >
-                    Low
-                  </IonButton>
-                </IonButtons>
-              </IonItem>
-              
-              <IonItem>
-                <IonLabel></IonLabel>
-                <IonButtons>
-                  <IonInput type="number" fill="outline" labelPlacement="floating" label="H" value={inputValue[1]} className="fixed-size-input"
-                    onIonChange={e => setInputValue({ ...inputValue, 1: parseFloat(e.detail.value!) })}></IonInput>
-                  <IonInput type="number" fill="outline" labelPlacement="floating" label="M" value={inputValue[2]} className="fixed-size-input"
-                    onIonChange={e => setInputValue({ ...inputValue, 2: parseFloat(e.detail.value!) })}></IonInput>
-                  <IonInput type="number" fill="outline" labelPlacement="floating" label="L" value={inputValue[3]} className="fixed-size-input"
-                    onIonChange={e => setInputValue({ ...inputValue, 3: parseFloat(e.detail.value!) })}></IonInput>
-                </IonButtons>
-              </IonItem>
-              <IonItem>
-                <IonLabel></IonLabel>
-                <IonButtons>
-                  <IonInput labelPlacement="floating" label="Lang" type="number" fill="outline" value={inputInterVal.Lang} maxlength={3} style={{ width: '6em' }}
-                    onIonChange={e => setInputInterVal({ ...inputInterVal, Lang: parseFloat(e.detail.value!) })}></IonInput>
-                  <IonInput labelPlacement="floating" label="Sentence" type="number" fill="outline" value={inputInterVal.Sent} maxlength={3} style={{ width: '6em' }}
-                    onIonChange={e => setInputInterVal({ ...inputInterVal, Sent: parseFloat(e.detail.value!) })}></IonInput>
-                </IonButtons>
-              </IonItem>
+                  )
+                ))}
+              </IonList>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
+        <IonModal className="modal-small" isOpen={showModal} onDidDismiss={() => setShowModal(false)} backdropDismiss={false}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Paused</IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <p>Paused</p>
+            <p>Elapsed Time: {currentPauseTime}</p>
+            <IonButton onClick={() => { setShowModal(false); g_bPause = false; }}>Close</IonButton>
+          </IonContent>
+        </IonModal>
+        <IonModal className="modal-big" ref={modal} canDismiss={canDismiss} presentingElement={presentingElement} backdropDismiss={false} >
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>
+                <div style={{ display: 'flex', flexDirection: 'row' }}>
+                  <div>
+                    {isPlaying && (
+                      <>
+                        <TextComponents text='A' playState={playState} />
+                        <TextComponents text='B' playState={playState} />
+                        <IonText style={{ marginLeft: '10px' }} className="primary-background white-text border-round font-size-small">{progressTxt}</IonText>
+                        <IonProgressBar value={(currentIndex - currentGrpStartIndex + 1) / currentGrpCount} color="primary" style={{ marginLeft: '5px', width: '2.5em' }}></IonProgressBar>
+                      </>
+                    )}
+                  </div>
+                  <div>
+                    <IonChip className="large-chip" outline={true}>{dictGroup[selectedGroup]}</IonChip> 180 Sentences {isPlaying && (<IonText>[{elapsedTime}]</IonText>)}
+                  </div>
+                </div>
+              </IonTitle>
 
-            </IonList>
-          </IonPopover>
-      <IonRow>
-    <IonCol>
-    <IonList>
-          <IonListHeader> <h1>Sentence practice - Group</h1></IonListHeader>
-          <p style={{marginLeft:'0.5em'}}>{selectedGroups.length>1?'':dictGroup[selectedGroup]}</p>
-          {contents.map((content, index) => (
-            selectedGroups.includes(content.Group??'') && (
-            <IonItem key={content.No}>
-              <IonAvatar slot="start" className="avatarStyle">
-              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                <IonChip outline={true} onClick={()=>{show1Line(content);openModal(index);}}>{content.No}</IonChip>
-                <IonButton onClick={async () => {setCurrentIndex(index);playOn();await playAudio1Line(content);playOff();}}>
-                  <IonIcon icon={caretForwardCircleOutline}/>
-                </IonButton>
-              </div>
-              </IonAvatar>
-              <IonLabel className={currentIndex == index?'highlight':''}>
-              {selectedLanguage != 'eng'?(
-                <h2 className="ion-text-wrap" style={{fontStyle:'Nanum Myeongjo'}}><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}> 
-                <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton>
-                 {content.FIELD2}</h2>
-              ):''}
-              {selectedLanguage != 'kor'?(
-                <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}> 
-                <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> 
-                {content.FIELD1}</h2>
-              ):''}
-              {isDescChecked?(
-                <p className="ion-text-wrap">{content.DESC}</p>
-                ):''}
-              </IonLabel>
-            </IonItem>
-            )
-          ))}
-        </IonList>
-    </IonCol>
-  </IonRow>
-</IonGrid>
-        
+              <IonButtons slot="end" style={{ overflow: 'auto' }}>
+                <IonText>Lvl<IonBadge color="primary">{selectedLevel === '1' ? 'High' : selectedLevel === '2' ? 'Mid' : 'Low'} </IonBadge></IonText>
+                <IonText>
+                  (x{selectedLevel === '1' ? inputValue[1] : selectedLevel === '2' ? inputValue[2] : inputValue[3]}) </IonText>
+                {!isPlaying && (
+                  <IonButton fill="outline" onClick={() => { dismiss() }}>Close</IonButton>
+                )
+                }
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <IonCard style={{ minHeight: '16em' }}>
+              <IonCardHeader>
+                <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <IonChip outline={true}>{currentContent?.No}</IonChip>
+                    {isPlaying && (<IonText>{currentHint}</IonText>)}
+                  </div>
+                  {isPlaying && (
+                    <IonButtons>
+                      <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
+                        <IonIcon icon={stopCircleOutline} slot="start" />
+                        <span className='hide-on-small'>Stop</span>
+                      </IonButton>
+                      <IonButton fill="outline" onClick={() => { playPause(); }}>
+                        <IonIcon icon={pauseCircleOutline} slot="start" />
+                        <span className='hide-on-small'>Pause</span>
+                      </IonButton>
+                    </IonButtons>
+                  )}
+                </IonCardTitle>
+                {(isPlaying || isShowLine) ? (
+                  <div>
+                    <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
+                    <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
+                  </div>
+                ) :
+                  <IonList>
+                    {[...record].reverse().map((item, index) => (
+                      <IonItem key={index}>
+                        <IonLabel style={{
+                          fontSize: index === 0 ? '1.3em' : 'normal',
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word',
+                          fontWeight: index === 0 ? 'bold' : 'normal'
+                        }}>
+                          {item.value}
+                        </IonLabel>
+                      </IonItem>
+                    ))}
+                  </IonList>
+                }
+              </IonCardHeader>
+              <IonCardContent className="ion-text-wrap">{!isPlaying ? currentDesc : ''}</IonCardContent>
+            </IonCard>
+          </IonContent>
+        </IonModal>
       </IonContent>
     </IonPage>
   );
