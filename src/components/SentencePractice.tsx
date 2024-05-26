@@ -333,7 +333,7 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
   const show1Line = async (content : ContentType) => {
     setCurrentContent(content);
     setCurrentField(""); // secondLine
-    setCurrentDesc("");
+    setCurrentHint(content.Hint??'');
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
       setCurrentField(content.FIELD1 as string);
@@ -645,7 +645,7 @@ const loadDataAll = async () => {
           <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <IonChip outline={true}>{currentContent?.No}</IonChip>
-              {isPlaying && (<IonText>{currentHint}</IonText>)}
+              {(isPlaying || isSemiAutoChecked) && (<IonText>{currentHint}</IonText>)}
             </div>
             {!isPlaying && isSemiAutoChecked && (
               <IonButtons>
