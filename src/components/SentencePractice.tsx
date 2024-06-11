@@ -134,6 +134,7 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
   const [isDescChecked, setIsDescChecked] = useState(true);
   const [isHintChecked, setIsHintChecked] = useState(true);
   const [isSemiAutoChecked, setSemiAutoChecked] = useState(true);
+  const [isAutoPlay1Sentence, setIsAutoPlay1Sentence] = useState(false); // it is not used.
   const [selectedDirect, setSelectedDirect] = useState("k2e"); //e2k
 
   const [showLanguagePopover, setShowLanguagePopover] = useState(false);
@@ -148,6 +149,7 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
   const [inputValue, setInputValue] = useState({ 1: 0.7, 2: 1, 3: 1.8 });
   const [inputInterVal, setInputInterVal] = useState({ Lang: 0.7, Sent: 1 });
   const [playState, setPlayState] = useState('A');
+  const [playPitch, setPlayPitch] = useState(1); 
 
   let bPlay : boolean = false;
 
@@ -268,6 +270,7 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
     }
 
     const newAudioPlayer = new Audio(`/audio/${fileName}.mp3`);
+    newAudioPlayer.playbackRate = playPitch;
     newAudioPlayer.play();
     setAudioPlayer(newAudioPlayer);
     return newAudioPlayer;
@@ -358,9 +361,15 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
     console.log('playOff bPlay:' + g_bPlay);
   }
 
-  const showMove =(dir : number)=> {
+  const showMove = async(dir : number)=> {
     setCurrentIndex(index=>index + dir);
-    show1Line(contents[currentIndex]);
+    if (isAutoPlay1Sentence) {
+      playOn();
+      await playAudio1Line(contents[currentIndex]);
+      playOff();
+    } else {
+      show1Line(contents[currentIndex]);
+    }
   }
 
   const playStop =() => {
@@ -537,6 +546,10 @@ const loadDataAll = async () => {
     setIsHintChecked(event.detail.checked);
   }
 
+  const handleIsAutoPlay1SentenceChange= (event: CustomEvent) => {
+    setIsAutoPlay1Sentence(event.detail.checked);
+  }
+
   const handleSemiAutoCheckChange= (event: CustomEvent) => {
     setSemiAutoChecked(event.detail.checked);
   }
@@ -655,6 +668,7 @@ const loadDataAll = async () => {
                 <IonButton fill="outline" onClick={() => { showMove(1);}}>
                   <IonIcon icon={chevronForwardOutline} slot="start" />
                 </IonButton>
+                <IonLabel>Auto Play</IonLabel><IonCheckbox slot="start" value="autoPlay" checked={isAutoPlay1Sentence}  onIonChange={handleIsAutoPlay1SentenceChange}/>
               </IonButtons>
           )}
             {isPlaying && (
@@ -841,6 +855,10 @@ const loadDataAll = async () => {
                   <IonInput labelPlacement="floating" label="Sentence" type="number" fill="outline" value={inputInterVal.Sent} maxlength={3} style={{ width: '6em' }}
                     onIonChange={e => setInputInterVal({ ...inputInterVal, Sent: parseFloat(e.detail.value!) })}></IonInput>
                 </IonButtons>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Play Pitch Rate</IonLabel>
+                <IonRange min={0.5} max={1.5} step={0.1} pin={true} value={playPitch} onIonChange={e => setPlayPitch(e.detail.value as number)} />
               </IonItem>
 
             </IonList>
