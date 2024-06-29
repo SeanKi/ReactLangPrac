@@ -3,7 +3,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import { Storage } from '@ionic/storage';
 import { IonModal, IonChip, IonRange, IonBadge, IonGrid, IonRow, IonCol, IonText, IonButtons, IonInput, IonPopover, IonRadio, IonRadioGroup, IonSelect, IonSelectOption, IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonList, IonListHeader, IonItem, IonLabel, IonAvatar, IonButton, IonIcon, IonProgressBar, IonCard, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCardContent, IonCheckbox} from '@ionic/react';
 import { musicalNotes, menuOutline, caretForwardCircleOutline, playOutline, listOutline, arrowForwardOutline, shuffleOutline, } from 'ionicons/icons'; // Import the musicalNotes icon <IonIcon name="caret-forward-circle-outline"></IonIcon>
-import { stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/icons';
+import { chevronBackOutline, chevronForwardOutline, stopCircleOutline, pauseCircleOutline, flash, time } from 'ionicons/icons';
 import Select from 'react-select';
 import './SentencePractice.css';
 
@@ -142,7 +142,12 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
   const [isShowLine, setIsShowLine] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [isDescChecked, setIsDescChecked] = useState(true);
+  const [isHintChecked, setIsHintChecked] = useState(true);
+  const [isSemiAutoChecked, setSemiAutoChecked] = useState(true);
+  const [isAutoPlay1Sentence, setIsAutoPlay1Sentence] = useState(false); // it is not used.
   const [selectedDirect, setSelectedDirect] = useState("k2e"); //e2k
+  const [isShowOrNot, setIsShowOrNot] = useState(false);
+  const [isGrayOrBlack, setIsGrayOrBlack] = useState(false);
 
   const [showLanguagePopover, setShowLanguagePopover] = useState(false);
   const [showDescriptionPopover, setShowDescriptionPopover] = useState(false);
@@ -157,7 +162,14 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
   const [inputInterVal, setInputInterVal] = useState({ Lang: 0.7, Sent: 1 });
   const [groupOptions, setGroupOptions] = useState({Count:0});
   const [playState, setPlayState] = useState('A');
+  const [playPitch, setPlayPitch] = useState(1); 
+  const [selectedScale, setSelectedScale] = useState('1');
 
+  const handleButtonClick = (scale: string) => {
+    document.documentElement.style.setProperty('--font-scale', scale);
+    setSelectedScale(scale);
+  };
+  
   let bPlay : boolean = false;
 
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
@@ -322,6 +334,7 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
     }
 
     const newAudioPlayer = new Audio(`/audio/${fileName}.mp3`);
+    newAudioPlayer.playbackRate = playPitch;
     newAudioPlayer.play();
     setAudioPlayer(newAudioPlayer);
     return newAudioPlayer;
@@ -367,6 +380,8 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
     setCurrentField(""); // secondLine
     setCurrentDesc("");
     setCurrentHint(content.Hint??'');
+    setIsShowOrNot(true);
+    setIsGrayOrBlack(true);
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
       await playAudioAndWait(content.KorFile, inputInterVal.Lang, 'A');
@@ -388,7 +403,9 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
     setCurrentContent(content);
     setSelectedGroup(content.Group as string);
     setCurrentField(""); // secondLine
-    setCurrentDesc("");
+    setCurrentHint(content.Hint??'');
+    setIsShowOrNot(false);
+    setIsGrayOrBlack(false);
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
       setCurrentField(content.FIELD1 as string);
@@ -411,6 +428,17 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
     g_bPlay = false;
     g_bPause = false;
     console.log('playOff bPlay:' + g_bPlay);
+  }
+
+  const showMove = async(dir : number)=> {
+    setCurrentIndex(index=>index + dir);
+    if (isAutoPlay1Sentence) {
+      playOn();
+      await playAudio1Line(contents[currentIndex]);
+      playOff();
+    } else {
+      show1Line(contents[currentIndex]);
+    }
   }
 
   const playStop =() => {
@@ -599,6 +627,18 @@ const loadDataAll = async () => {
 
   const handleDescCheckChange= (event: CustomEvent) => {
     setIsDescChecked(event.detail.checked);
+  }
+
+  const handleHintCheckChange= (event: CustomEvent) => {
+    setIsHintChecked(event.detail.checked);
+  }
+
+  const handleIsAutoPlay1SentenceChange= (event: CustomEvent) => {
+    setIsAutoPlay1Sentence(event.detail.checked);
+  }
+
+  const handleSemiAutoCheckChange= (event: CustomEvent) => {
+    setSemiAutoChecked(event.detail.checked);
   }
 
   const handleIntervalChange= (event: CustomEvent) => {
@@ -791,6 +831,17 @@ const loadDataAll = async () => {
                       onIonChange={e => setInputInterVal({ ...inputInterVal, Sent: parseFloat(e.detail.value!) })}></IonInput>
                   </IonButtons>
                 </IonItem>
+                <IonItem>
+                  <IonLabel>Play Pitch Rate</IonLabel>
+                  <IonRange min={0.5} max={1.5} step={0.1} pin={true} value={playPitch} onIonChange={e => setPlayPitch(e.detail.value as number)} />
+                </IonItem>
+                <IonItem>
+                <IonLabel>Size</IonLabel>
+                <IonButton fill={selectedScale === '1' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1')}>1</IonButton>
+                <IonButton fill={selectedScale === '1.25' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1.25')}>1.25</IonButton>
+                <IonButton fill={selectedScale === '1.5' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1.5')}>1.50</IonButton>
+                <IonButton fill={selectedScale === '1.75' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1.75')}>1.75</IonButton>
+                </IonItem>
               </IonList>
             </IonPopover>
           </IonButtons>
@@ -891,9 +942,20 @@ const loadDataAll = async () => {
               <IonCardHeader>
                 <IonCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <IonChip outline={true}>{currentContent?.No}</IonChip>
-                    {isPlaying && (<IonText>{currentHint}</IonText>)}
+                    <IonChip outline={true} onClick={()=>setIsShowOrNot(false)}>{currentContent?.No}</IonChip>
+                    {(isPlaying || isSemiAutoChecked) && (<IonText>{currentHint}</IonText>)}
                   </div>
+                  {!isPlaying && isSemiAutoChecked && (
+                    <IonButtons>
+                      <IonButton fill="outline" onClick={() => { showMove(-1); }}>
+                        <IonIcon icon={chevronBackOutline} slot="start" />
+                      </IonButton>
+                      <IonButton fill="outline" onClick={() => { showMove(1);}}>
+                        <IonIcon icon={chevronForwardOutline} slot="start" />
+                      </IonButton>
+                      <IonLabel>Auto Play</IonLabel><IonCheckbox slot="start" value="autoPlay" checked={isAutoPlay1Sentence}  onIonChange={handleIsAutoPlay1SentenceChange}/>
+                    </IonButtons>
+                  )}
                   {isPlaying && (
                     <IonButtons>
                       <IonButton fill="outline" onClick={() => { playStop(); setCanDismiss(true); }}>
@@ -909,9 +971,60 @@ const loadDataAll = async () => {
                 </IonCardTitle>
                 {(isPlaying || isShowLine) ? (
                   <div>
-                    <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
-                    <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField}</IonCardSubtitle>
+                  <div style={{display: 'flex', alignItems: 'center'}}>
+                  {!isAutoPlay1Sentence && 
+                      <IonIcon 
+                      icon={caretForwardCircleOutline} 
+                      onClick={() => playAudio(currentContent?.KorFile)}
+                      style={{fontSize: '2em', cursor: 'pointer', display: !isPlaying ? 'block' : 'none'}}
+                    />
+                  }
+                  <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
                   </div>
+                  <div style={{display: 'flex', alignItems: 'center'}}>
+    
+                  {!(isAutoPlay1Sentence) && 
+                  <>
+                        <IonIcon 
+                          icon={caretForwardCircleOutline} 
+                          onClick={() => playAudio(currentContent?.EngFile)}
+                          style={{fontSize: '3em', cursor: 'pointer', display: !isPlaying ? 'block' : 'none'}}
+                        />
+                      {!isPlaying && (
+                      <>
+                        {/* <IonButton 
+                          onClick={() => { setIsShowOrNot(false); }}
+                          fill="outline"
+                          style={{ transform: 'scale(0.6)'
+                          }} // 첫 번째 버튼 80% 크기
+                        >
+                        </IonButton> */}
+                        <IonButton 
+                          onClick={() => { setIsShowOrNot(true); setIsGrayOrBlack(false); }}
+                          fill="outline"
+                          style={{ backgroundColor: 'grey', color: 'white'
+                           }} // 두 번째 버튼 회색
+                        >
+                        </IonButton>
+                        <IonButton 
+                          onClick={() => { setIsShowOrNot(true); setIsGrayOrBlack(true); }}
+                          fill="outline"
+                          style={{ backgroundColor: 'black', color: 'white'
+                           }} // 세 번째 버튼 검은색
+                        >
+                        </IonButton>
+                      </>
+                      )}
+                  </>
+                  }
+                  <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}
+                    style={{
+                      display: isShowOrNot ? 'block' : 'none',
+                      color: isGrayOrBlack ? 'black' : 'lightgray',
+                      fontSize: isGrayOrBlack ? '' : '2vw'
+                    }}>{currentField}</IonCardSubtitle>
+                  </div>
+                 </div>
                 ) :
                   <IonList>
                     {[...record].reverse().map((item, index) => (

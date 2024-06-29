@@ -12,10 +12,11 @@ const dictGroup = {
       "8": "8 50잉글리시 0~49",
       "9": "9 50잉글리시 50~99",
       "1": "1 문장의5형식",
-      "10": "10 짧은표현 200"
+      "10": "10 짧은표현 200",
+      "14": "0. 필수 기본 문장"
     };
  
 const Tab2: React.FC = () => {
-  return <SentenceGrpPractice DictGroup={dictGroup} FileName="/180Sentences+.xml" InitGroup='12,13,1,10'/>;
+  return <SentenceGrpPractice DictGroup={dictGroup} FileName="/180Sentences+.xml" InitGroup='12'/>; // ,13,1,10
 };
 export default Tab2;

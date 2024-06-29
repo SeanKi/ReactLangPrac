@@ -40,17 +40,22 @@
     color:rgba(220,220,220,0.6);
     font-size: 3vw;
   }
+  :root {
+    --font-scale: 1;
+  }
+  
   .size-big {
-    font-size: 5vw/** 2.5em**/;
+    font-size: calc(5vw * var(--font-scale));
   }
-
+  
   .size-mid {
-    font-size: 4.5vw;
+    font-size: calc(4.5vw * var(--font-scale));
   }
+  
   .size-small {
-    font-size: 3.8vw;
+    font-size: calc(3.8vw * var(--font-scale));
   }
-
+  
   ion-modal {
     --width: 98vw;
     --backdrop-opacity: var(--ion-backdrop-opacity, 0.50);

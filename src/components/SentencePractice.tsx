@@ -17,6 +17,7 @@ type CommonComponentProps = {
     InitGroup: string;
   };
 
+
 // const orientation = useOrientation(); // it doesn't work.
 const readDictGroupFromFile = async (filename: string): Promise<DictGroup> => {
   const response = await fetch(filename);
@@ -136,6 +137,8 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
   const [isSemiAutoChecked, setSemiAutoChecked] = useState(true);
   const [isAutoPlay1Sentence, setIsAutoPlay1Sentence] = useState(false); // it is not used.
   const [selectedDirect, setSelectedDirect] = useState("k2e"); //e2k
+  const [isShowOrNot, setIsShowOrNot] = useState(false);
+  const [isGrayOrBlack, setIsGrayOrBlack] = useState(false);
 
   const [showLanguagePopover, setShowLanguagePopover] = useState(false);
   const [showDescriptionPopover, setShowDescriptionPopover] = useState(false);
@@ -150,7 +153,13 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
   const [inputInterVal, setInputInterVal] = useState({ Lang: 0.7, Sent: 1 });
   const [playState, setPlayState] = useState('A');
   const [playPitch, setPlayPitch] = useState(1); 
+  const [selectedScale, setSelectedScale] = useState('1');
 
+  const handleButtonClick = (scale: string) => {
+    document.documentElement.style.setProperty('--font-scale', scale);
+    setSelectedScale(scale);
+  };
+  
   let bPlay : boolean = false;
 
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
@@ -316,6 +325,8 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
     setCurrentField(""); // secondLine
     setCurrentDesc("");
     setCurrentHint(content.Hint??'');
+    setIsShowOrNot(true);
+    setIsGrayOrBlack(true);
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
       await playAudioAndWait(content.KorFile, inputInterVal.Lang, 'A');
@@ -337,6 +348,8 @@ const SentencePractice: React.FC<CommonComponentProps> = (props) => {
     setCurrentContent(content);
     setCurrentField(""); // secondLine
     setCurrentHint(content.Hint??'');
+    setIsShowOrNot(false);
+    setIsGrayOrBlack(false);
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
       setCurrentField(content.FIELD1 as string);
@@ -624,7 +637,7 @@ const loadDataAll = async () => {
         <IonHeader>
           <IonToolbar>
             <IonTitle>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <div style={{ display: 'flex', flexDirection: 'row'}}>
             <div>
               {isPlaying &&(
                 <>
@@ -686,8 +699,59 @@ const loadDataAll = async () => {
           </IonCardTitle>
             {(isPlaying || isShowLine)?(
              <div>
-            <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
-            <IonCardSubtitle className={`ion-text-wrap ${!isPlaying && isSemiAutoChecked ? 'is-semi-auto-on' : (currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big')}`}>{currentField}</IonCardSubtitle>
+              <div style={{display: 'flex', alignItems: 'center'}}>
+              {!isAutoPlay1Sentence && 
+                  <IonIcon 
+                  icon={caretForwardCircleOutline} 
+                  onClick={() => playAudio(currentContent?.KorFile)}
+                  style={{fontSize: '2em', cursor: 'pointer', display: !isPlaying ? 'block' : 'none'}}
+                />
+              }
+              <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
+              </div>
+              <div style={{display: 'flex', alignItems: 'center'}}>
+
+              {!(isAutoPlay1Sentence) && 
+              <>
+                    <IonIcon 
+                      icon={caretForwardCircleOutline} 
+                      onClick={() => playAudio(currentContent?.EngFile)}
+                      style={{fontSize: '3em', cursor: 'pointer', display: !isPlaying ? 'block' : 'none'}}
+                    />
+                  {!isPlaying && (
+                  <>
+                    <IonButton 
+                      onClick={() => { setIsShowOrNot(false); }}
+                      fill="outline"
+                      style={{ transform: 'scale(0.6)'
+                      }} // 첫 번째 버튼 80% 크기
+                    >
+                    </IonButton>
+                    <IonButton 
+                      onClick={() => { setIsShowOrNot(true); setIsGrayOrBlack(false); }}
+                      fill="outline"
+                      style={{ backgroundColor: 'grey', color: 'white'
+                       }} // 두 번째 버튼 회색
+                    >
+                    </IonButton>
+                    <IonButton 
+                      onClick={() => { setIsShowOrNot(true); setIsGrayOrBlack(true); }}
+                      fill="outline"
+                      style={{ backgroundColor: 'black', color: 'white'
+                       }} // 세 번째 버튼 검은색
+                    >
+                    </IonButton>
+                  </>
+                  )}
+              </>
+              }
+              <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}
+                style={{
+                  display: isShowOrNot ? 'block' : 'none',
+                  color: isGrayOrBlack ? 'black' : 'lightgray',
+                  fontSize: isGrayOrBlack ? '' : '2vw'
+                }}>{currentField}</IonCardSubtitle>
+              </div>
              </div>
             ):
             <IonList>
@@ -860,7 +924,13 @@ const loadDataAll = async () => {
                 <IonLabel>Play Pitch Rate</IonLabel>
                 <IonRange min={0.5} max={1.5} step={0.1} pin={true} value={playPitch} onIonChange={e => setPlayPitch(e.detail.value as number)} />
               </IonItem>
-
+            <IonItem>
+            <IonLabel>Size</IonLabel>
+            <IonButton fill={selectedScale === '1' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1')}>1</IonButton>
+            <IonButton fill={selectedScale === '1.25' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1.25')}>1.25</IonButton>
+            <IonButton fill={selectedScale === '1.5' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1.5')}>1.50</IonButton>
+            <IonButton fill={selectedScale === '1.75' ? 'solid' : 'outline'} onClick={() => handleButtonClick('1.75')}>1.75</IonButton>
+            </IonItem>
             </IonList>
           </IonPopover>
       <IonRow>
