@@ -141,8 +141,8 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isShowLine, setIsShowLine] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("all");
-  const [isDescChecked, setIsDescChecked] = useState(true);
-  const [isHintChecked, setIsHintChecked] = useState(true);
+  const [isDescChecked, setIsDescChecked] = useState(false);
+  const [isHintChecked, setIsHintChecked] = useState(false);
   const [isSemiAutoChecked, setSemiAutoChecked] = useState(true);
   const [isAutoPlay1Sentence, setIsAutoPlay1Sentence] = useState(false); // it is not used.
   const [selectedDirect, setSelectedDirect] = useState("k2e"); //e2k
@@ -751,6 +751,10 @@ const loadDataAll = async () => {
                       <IonCol size="6">
                         <IonList>
                           <IonItem>
+                            <IonLabel>Hint</IonLabel>
+                            <IonCheckbox slot="start" checked={isHintChecked} onIonChange={handleHintCheckChange}></IonCheckbox>
+                          </IonItem>
+                          <IonItem>
                             <IonLabel>Desc.</IonLabel>
                             <IonCheckbox slot="start" checked={isDescChecked} onIonChange={handleDescCheckChange}></IonCheckbox>
                           </IonItem>
@@ -866,20 +870,25 @@ const loadDataAll = async () => {
                       <IonAvatar slot="start" className="avatarStyle">
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <IonChip outline={true} onClick={() => { show1Line(content); openModal(index); }}>{content.No}</IonChip>
-                          <IonButton onClick={async () => { setCurrentIndex(index); playOn(); await playAudio1Line(content); playOff(); }}>
+                          {/* <IonButton onClick={async () => { setCurrentIndex(index); playOn(); await playAudio1Line(content); playOff(); }}>
                             <IonIcon icon={caretForwardCircleOutline} />
-                          </IonButton>
+                          </IonButton> */}
                         </div>
                       </IonAvatar>
                       <IonLabel className={currentIndex == index ? 'highlight' : ''}>
+                        {isHintChecked?(
+                          <p className="ion-text-wrap">{content.Hint}</p>
+                        ):''}
                         {selectedLanguage != 'eng' ? (
-                          <h2 className="ion-text-wrap" style={{ fontStyle: 'Nanum Myeongjo' }}><IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}>
-                            <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton>
+                          <h2 className="ion-text-wrap" style={{ fontStyle: 'Nanum Myeongjo' }}>
+                            {/* <IonButton style={buttonStyle} onClick={() => playAudio(content.KorFile)}>
+                            <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> */}
                             {content.FIELD2}</h2>
                         ) : ''}
                         {selectedLanguage != 'kor' ? (
-                          <h2 className="ion-text-wrap"><IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}>
-                            <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton>
+                          <h2 className="ion-text-wrap">
+                            {/* <IonButton style={buttonStyle} onClick={() => playAudio(content.EngFile)}>
+                            <IonIcon icon={caretForwardCircleOutline}></IonIcon></IonButton> */}
                             {content.FIELD1}</h2>
                         ) : ''}
                         {isDescChecked ? (
@@ -976,7 +985,7 @@ const loadDataAll = async () => {
                       <IonIcon 
                       icon={caretForwardCircleOutline} 
                       onClick={() => playAudio(currentContent?.KorFile)}
-                      style={{fontSize: '2em', cursor: 'pointer', display: !isPlaying ? 'block' : 'none'}}
+                      style={{fontSize: '3em', cursor: 'pointer', display: !isPlaying ? 'block' : 'none'}}
                     />
                   }
                   <IonCardSubtitle className={`ion-text-wrap ${currentField0.length >= 40 ? 'size-small' : currentField0.length >= 20 ? 'size-mid' : 'size-big'}`}>{currentField0}</IonCardSubtitle>
