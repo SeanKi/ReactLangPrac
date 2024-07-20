@@ -47,6 +47,10 @@ let g_bPlay : boolean = false;
 let g_bPause : boolean = false;
 let g_sLevel : string = '2'; //@SeanKi: this is the mirror value of selectedLevel. for some reason, selectedLevel was not updated in playAudio1Group() function.
 type TextState = 'gray' | 'blinking' | 'black';
+let g_bSkipTimer : boolean = false;
+type TimerID = { value: number };
+let timerID1:TimerID = {value: -1}; // for playAudioWait.
+let timerID2:TimerID = {value: -1};
 
 
 const TextComponents: React.FC<{ text: string, playState: string }> = ({ text, playState }) => {
@@ -118,6 +122,7 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
   const grpId= params.get('grpId');
   const [progressTxt, setProgressTxt] = useState("");
   const [endedResult, setEndedResult] = useState("");
+  const [skippedTime, setSkippedTime] = useState(0);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentGrpCount, setCurrentGrpCount] = useState(0);
@@ -174,10 +179,6 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
 
   const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
-  type TimerID = { value: number };
-
-  let timerID1:TimerID = {value: -1}; //number = -1;
-  let timerID2:TimerID = {value: -1};
   let timerId2 = -1;
 
   const clearTimer = (tID: TimerID) => {
@@ -287,6 +288,8 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
     let cnt = 0;
     let endNo = startNo;
 
+    setSkippedTime(0);
+
     while(index < (startIndex + playCount)) {
       if (startNo !== contents[index].No) {
         endNo = contents[index].No;
@@ -316,7 +319,7 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
     let endTime = getCurrentTime();
     let elapsedTime = endTime - startTime;
     
-    let text = `No ${startNo} ~ ${endNo} / Count ${cnt} / Started ${formatedTime(started)} / Elapsed ${formatElapsedTime(elapsedTime/1000)} `; //formatElapsedTime(elapsedTime/1000)
+    let text = `No ${startNo} ~ ${endNo} / Count ${cnt} / Started ${formatedTime(started)} / Elapsed ${formatElapsedTime(elapsedTime/1000)} / Faster ${(skippedTime/1000).toFixed(0)}sec`; //formatElapsedTime(elapsedTime/1000)
     await saveData(startTime ? startTime.toString() : '', text);
     loadDataAll();
     setEndedResult(endedResult=>text);
@@ -365,11 +368,30 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
           clearTimer(timerID1);
           if (!g_bPlay) return; 
           setPlayState(prevState=>sentenceOrder + '>');
-          timerID1.value =  window.setInterval(() => {
-            if (g_bPause) return; //
-            clearTimer(timerID1);
-            resolve();
-          }, waitTime);
+          let elapsedTime = 0;
+          const checkInterval = 100; // 100ms 간격으로 체크
+
+          timerID1.value = window.setInterval(() => {
+              if (g_bPause) return; // 일시 정지 상태면 아무 것도 하지 않음
+              
+              elapsedTime += checkInterval;
+              if(g_bSkipTimer)
+              {
+                g_bSkipTimer = false;
+                clearTimer(timerID1);
+                setSkippedTime(skippedTime=>skippedTime + (waitTime - elapsedTime));
+                resolve();
+              }
+              if (elapsedTime >= waitTime) {
+                  clearTimer(timerID1);
+                  resolve();
+              }
+          }, checkInterval);
+          // timerID1.value =  window.setInterval(() => {
+          //   if (g_bPause) return; //
+          //   clearTimer(timerID1);
+          //   resolve();
+          // }, waitTime);
         };
       }
     });
@@ -382,6 +404,8 @@ const SentenceGrpPractice: React.FC<CommonComponentProps> = (props) => {
     setCurrentHint(content.Hint??'');
     setIsShowOrNot(true);
     setIsGrayOrBlack(true);
+    g_bSkipTimer = false;
+
     if (selectedDirect == 'k2e') {
       setCurrentField0(content.FIELD2==null?'':content.FIELD2);
       await playAudioAndWait(content.KorFile, inputInterVal.Lang, 'A');
@@ -974,6 +998,9 @@ const loadDataAll = async () => {
                       <IonButton fill="outline" onClick={() => { playPause(); }}>
                         <IonIcon icon={pauseCircleOutline} slot="start" />
                         <span className='hide-on-small'>Pause</span>
+                      </IonButton>
+                      <IonButton fill="outline" onClick={()=>g_bSkipTimer=true}>
+                        <IonIcon icon={chevronForwardOutline} slot="start" />
                       </IonButton>
                     </IonButtons>
                   )}

@@ -58,6 +58,7 @@
   
   ion-modal {
     --width: 98vw;
+    --height: 95vh;
     --backdrop-opacity: var(--ion-backdrop-opacity, 0.50);
     backdrop-filter: blur(3px);
   }
